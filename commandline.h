@@ -1,6 +1,6 @@
 ﻿//=================================================================================================
 //===
-//=== args.h
+//=== commandline.h
 //===
 //=== Copyright (c) 2020-2023 by RangeSoft.
 //=== All rights reserved.
@@ -30,7 +30,7 @@ private:
         std::string   value;
     };
 
-#ifdef SIMPLEUTILS_ARGS_AS_SINGLETON
+#ifdef SIMPLEUTILS_COMMANDLINE_AS_SINGLETON
 public:
     static CommandLine& instance() { static CommandLine Singleton; return Singleton; }
 private:

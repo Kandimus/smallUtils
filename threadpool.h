@@ -26,7 +26,7 @@ using TaskID = uint64_t;
 using LockGuard = std::lock_guard<std::mutex>;
 using LockUnique = std::unique_lock<std::mutex>;
 
-namespace SmallUtils
+namespace su
 {
 
 class ThreadPool

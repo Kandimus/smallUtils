@@ -15,7 +15,7 @@
 #include <vector>
 #include <string>
 
-namespace SmallUtils
+namespace su
 {
 
 class CommandLine

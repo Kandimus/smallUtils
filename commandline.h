@@ -135,7 +135,7 @@ public:
         return num < m_argument.size() ? m_argument[num] : "";
     }
 
-    unsigned int getCountArgument() const
+    size_t getCountArgument() const
     {
         return m_argument.size();
     }
@@ -230,8 +230,8 @@ private:
         std::string str = arg.substr(1);
         for (auto& item : m_list)
         {
-            int pos = str.find(item.shortname);
-            if(pos >= 0)
+            auto pos = str.find(item.shortname);
+            if(pos != std::string::npos)
             {
                 ++item.isSet;
             }
@@ -242,9 +242,9 @@ private:
     {
         std::string name = arg.substr(2);
         std::string value = "";
-        int pos = name.find('=');
+        auto pos = name.find('=');
 
-        if (pos >= 0)
+        if (pos != std::string::npos)
         {
             value = name.substr(pos + 1);
             name  = name.substr(0, pos);
@@ -270,7 +270,7 @@ private:
 private:
     std::vector<CommandLine::Item> m_list;
     std::vector<std::string> m_argument;
-}
+};
 
 }
 

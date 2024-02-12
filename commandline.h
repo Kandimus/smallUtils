@@ -14,9 +14,12 @@
 
 #include <vector>
 #include <string>
+#include <utility>
 
 namespace su
 {
+
+using CommandLineOption = std::pair<std::string, unsigned char>;
 
 class CommandLine
 {
@@ -63,6 +66,11 @@ public:
         item->value     = "";
 
         return *this;
+    }
+
+    inline CommandLine& addOption(const CommandLineOption& name, const std::string& default_value)
+    {
+        return addOption(name.first, name.second, default_value);
     }
 
     CommandLine& addOption(const std::string& name, const unsigned char shortname, const std::string& default_value)

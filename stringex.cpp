@@ -247,4 +247,19 @@ std::string String_FromBuffer(const unsigned char *buf, unsigned int bufsize)
 	return result;
 }
 
+std::string String_trim(const std::string& str, const std::string& whitespace)
+{
+    const auto strBegin = str.find_first_not_of(whitespace);
+
+    if (strBegin == std::string::npos)
+    {
+        return str;
+    }
+
+    const auto strEnd = str.find_last_not_of(whitespace);
+    const auto strRange = strEnd - strBegin + 1;
+
+    return str.substr(strBegin, strRange);
+}
+
 }

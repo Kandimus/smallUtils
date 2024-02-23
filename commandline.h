@@ -49,6 +49,11 @@ public:
     virtual ~CommandLine() = default;
 
 public:
+    inline CommandLine& addSwitch(const CommandLineOption& name)
+    {
+        return addSwitch(name.first, name.second);
+    }
+
     CommandLine& addSwitch(const std::string& name, unsigned char shortname)
     {
         auto item = findItem(name);

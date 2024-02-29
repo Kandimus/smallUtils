@@ -265,19 +265,58 @@ std::string String_FromBuffer(const unsigned char *buf, unsigned int bufsize)
     return result;
 }
 
-std::string String_trim(const std::string& str, const std::string& whitespace)
+std::string String_ltrim(const std::string& str, const std::string& whitespace)
 {
-    const auto strBegin = str.find_first_not_of(whitespace);
-
-    if (strBegin == std::string::npos)
+    if (str.empty())
     {
         return str;
     }
 
-    const auto strEnd = str.find_last_not_of(whitespace);
-    const auto strRange = strEnd - strBegin + 1;
+    int ii = 0;
+    for (; ii < str.size(); ++ii)
+    {
+        if (whitespace.find(str[ii]) == std::string::npos)
+        {
+            break;
+        }
+    }
 
-    return str.substr(strBegin, strRange);
+    if (ii == str.size())
+    {
+        return "";
+    }
+
+    return (ii == 0) ? str : str.substr(ii);
+}
+
+std::string String_rtrim(const std::string& str, const std::string& whitespace)
+{
+    if (str.empty())
+    {
+        return str;
+    }
+
+    int ii = str.size() - 1;
+    for (; ii >= 0; --ii)
+    {
+        if (whitespace.find(str[ii]) == std::string::npos)
+        {
+            break;
+        }
+    }
+
+    if (ii <= 0)
+    {
+        return "";
+    }
+
+    return (ii == str.size() - 1) ? str : str.substr(0, ii + 1);
+}
+
+std::string String_trim(const std::string& str, const std::string& whitespace)
+{
+    std::string out = String_ltrim(str, whitespace);
+    return out.size() ? String_rtrim(out, whitespace) : out;
 }
 
 }

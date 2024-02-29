@@ -33,5 +33,7 @@ extern bool        String_equali(const std::string &str1, const std::string &str
 extern std::string String_deletewhite(const std::string &str);
 extern int         String_ToBuffer(const char *str, unsigned char *buf, unsigned int bufsize);
 extern std::string String_FromBuffer(const unsigned char *buf, unsigned int bufsize);
+extern std::string String_ltrim(const std::string& str, const std::string& whitespace);
+extern std::string String_rtrim(const std::string& str, const std::string& whitespace);
 extern std::string String_trim(const std::string& str, const std::string& whitespace);
 }

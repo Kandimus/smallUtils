@@ -25,8 +25,10 @@ public:
 #endif
 
     std::string checkDictionary(const std::unordered_set<std::string>& plurals) const;
+    std::string fixDictionary(const std::unordered_set<std::string>& plurals);
 
-    const std::unordered_map<std::string, std::string>& getRawData() const { return m_data; }
+    const std::unordered_map<std::string, std::string>& getRawData() const
+        { return m_data; }
 };
 
 class TranslatorManager
@@ -40,8 +42,16 @@ public:
     std::vector<std::string> getTranslatorsList() const;
 
     bool addText(const std::string& sid, const std::string& text);
-    inline std::string getText(Language l, std::string& sid) const
-        { return m_translator[0]->getText(sid); };
+
+    inline std::string getText(Language l, const std::string& sid) const
+        { auto tr = getTranslator(l); return tr ? tr->getText(sid) : m_translator[0]->getText(sid); }
+    inline std::string getText(const std::string& sid) const
+        { return getText(Language::EN_EN, sid); }
+
+    inline bool contains(Language l, const std::string& sid) const
+        { auto tr = getTranslator(l); return tr ? tr->contains(sid) : m_translator[0]->contains(sid); }
+    inline bool contains(const std::string& sid) const
+        { return contains(Language::EN_EN, sid); }
     size_t clearSidByPrefix(const std::string& prefix);
 
     inline void setDelimer(char delimer)
@@ -55,6 +65,7 @@ public:
         { return m_translationMissing; }
 
     std::string check() const;
+    std::string fix();
 
     bool save(const std::string& filename) const;
     bool load(const std::string& filename);
@@ -66,18 +77,13 @@ public:
 protected:
     TranslatorCreator* findTranslator(const std::string& name);
     void clearTranslators();
+    std::unordered_set<std::string> getAllPlurals() const;
 
 protected:
     std::vector<TranslatorCreator*> m_translator;
     char m_delimer = '|';
     std::string m_translationMissing = "<# Translation missing #>";
 };
-
-inline std::string TranslatorManager::getText(Language l, std::string& sid) const
-{
-    auto tr = getTranslator(l);
-    return tr ? tr->getText(sid) : m_translator[0]->getText(sid);
-}
 
 }
 

@@ -48,16 +48,20 @@ public:
 #endif
     virtual ~Translator() = default;
 
-    const std::string& getMarker() const { return m_marker; }
-    Language getLanguage() const { return m_language; }
+    const std::string& getMarker() const
+        { return m_marker; }
+    Language getLanguage() const
+        { return m_language; }
 
     inline std::string getText(const std::string& sid) const;
     std::string getText(const std::string& sid, int value) const;
-    bool contains(const std::string& sid) const { return m_data.find(sid) != m_data.end(); }
+    bool contains(const std::string& sid) const
+        { return m_data.find(sid) != m_data.end(); }
     
     std::string getPlural(const std::string& sid, int value) const;
 
-    inline std::string operator [](const std::string& sid) const { return getText(sid); }
+    inline std::string operator [](const std::string& sid) const
+        { return getText(sid); }
 
     static Language MarkerToLanguage(const std::string& marker);
     static std::string LanguageName(const std::string& marker);
@@ -77,11 +81,15 @@ protected:
     void init(const rapidjson::Document& root);
 #endif
 
-    std::string getMissingSid(const std::string& sid) const { return "<# Missing sid '" + sid + "' #>"; }
-    std::string getMissingPluralSid(const std::string& sid) const { return "<# Missing plural '" + sid + "' #>"; }
+    std::string getMissingSid(const std::string& sid) const
+        { return "<# Missing sid '" + sid + "' #>"; }
+    std::string getMissingPluralSid(const std::string& sid) const
+        { return "<# Missing plural '" + sid + "' #>"; }
 
-    uint8_t getPluralRule() const { return m_pluralRule; }
-    uint8_t getPluralForms() const { return m_pluralForms; }
+    uint8_t getPluralRule() const
+        { return m_pluralRule; }
+    uint8_t getPluralForms() const
+        { return m_pluralForms; }
     uint8_t getPluralForm(int v) const;
 
 protected:

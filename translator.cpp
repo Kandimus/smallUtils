@@ -103,7 +103,7 @@ std::string Translator::stringToSID(const std::string& text)
     {
         if (std::isalnum(ch))
         {
-            out += ch;
+            out += std::tolower(ch);
         }
         else
         {

@@ -61,10 +61,8 @@ bool TranslatorCreator::addPlural(const std::string& sid)
         return true;
     }
 
-    std::vector<std::string>* plural = &m_dictionary[sid];
-
-    plural->resize(m_pluralForms);
-    for (auto item : *plural)
+    m_dictionary[sid].resize(m_pluralForms);
+    for (auto& item : m_dictionary[sid])
     {
         item = "<# Plural missing #>";
     }
@@ -76,15 +74,11 @@ size_t TranslatorCreator::clearSidByPrefix(const std::string& prefix)
 {
     size_t out = 0;
 
-    //for (const auto& item : m_data)
-    //{
-    //    const auto& sid = item.first;
-
     for (auto iter = m_data.begin(); iter != m_data.end(); )
     {
         const auto& sid = (*iter).first;
 
-        if (sid.find_first_of(prefix) == 0)
+        if (sid.find(prefix) == 0)
         {
             iter = m_data.erase(iter);
 
@@ -218,7 +212,7 @@ std::string TranslatorCreator::checkDictionary(const std::unordered_set<std::str
             continue;
         }
         
-        out += "The '" + key + "' plurals is unused\n";
+        out += "The '" + key + "' plural is unused\n";
     }
 
     if (tmpPlurals.size())
@@ -226,6 +220,38 @@ std::string TranslatorCreator::checkDictionary(const std::unordered_set<std::str
         for (const std::string& item : tmpPlurals)
         {
             out += "Cant find plurals for '" + item + "' spell\n";
+        }
+    }
+
+    return out;
+}
+
+std::string TranslatorCreator::fixDictionary(const std::unordered_set<std::string>& plurals)
+{
+    std::string out = "";
+    std::unordered_set<std::string> tmpPlurals = plurals;
+
+    for (auto iter = m_dictionary.begin(); iter != m_dictionary.end(); )
+    {
+        auto key = (*iter).first;
+
+        if (tmpPlurals.find(key) != tmpPlurals.end())
+        {
+            tmpPlurals.erase(key);
+            ++iter;
+            continue;
+        }
+
+        iter = m_dictionary.erase(iter);
+        out += "The '" + key + "' plural deleted.\n";
+    }
+
+    if (tmpPlurals.size())
+    {
+        for (const std::string& item : tmpPlurals)
+        {
+            addPlural(item);
+            out += "The '" + item + "' plural added.\n";
         }
     }
 
@@ -380,28 +406,35 @@ size_t TranslatorManager::clearSidByPrefix(const std::string& prefix)
 std::string TranslatorManager::check() const
 {
     std::string out = "";
-    std::unordered_set<std::string> plurals;
+    auto plurals = getAllPlurals();
 
-    for (const auto& item : m_translator[0]->getRawData())
-    {
-        auto key = item.first;
-        const std::string& text = item.second;
-        
-        auto v = getPluralsFromText(text);
-
-        plurals.insert(v.begin(), v.end());
-    }
-
-    std::string tr_out = "";
     for (auto item : m_translator)
     {
-        tr_out = item->checkDictionary(plurals);
+        std::string tr_out = item->checkDictionary(plurals);
+        if (tr_out.size())
+        {
+            out += "Language " + item->getMarker() + ":\n" + tr_out;
+        }
+    }
+
+    return out;
+}
+
+std::string TranslatorManager::fix()
+{
+    std::string out = "";
+    auto plurals = getAllPlurals();
+
+    for (auto item : m_translator)
+    {
+        std::string tr_out = item->fixDictionary(plurals);
         if (tr_out.size())
         {
             out += "Language " + item->getMarker() + ":\n" + tr_out;
         }
     }
     return out;
+
 }
 
 bool TranslatorManager::save(const std::string& filename) const
@@ -562,6 +595,23 @@ void TranslatorManager::clearTranslators()
         delete item;
     }
     m_translator.clear();
+}
+
+std::unordered_set<std::string> TranslatorManager::getAllPlurals() const
+{
+    std::unordered_set<std::string> out;
+
+    for (const auto& item : m_translator[0]->getRawData())
+    {
+        auto key = item.first;
+        const std::string& text = item.second;
+
+        auto v = getPluralsFromText(text);
+
+        out.insert(v.begin(), v.end());
+    }
+
+    return out;
 }
 
 }

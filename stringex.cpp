@@ -305,7 +305,7 @@ std::string String_rtrim(const std::string& str, const std::string& whitespace)
         }
     }
 
-    if (ii <= 0)
+    if (ii < 0)
     {
         return "";
     }

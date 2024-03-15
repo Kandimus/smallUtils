@@ -131,12 +131,20 @@ public:
         return *this;
     }
 
+    inline int isSet(const CommandLineOption& name) const
+    {
+        return isSet(name.first);
+    }
     unsigned int isSet(const std::string& name) const
     {
         auto item = findConstItem(name);
         return item ? item->isSet : false;
     }
 
+    inline std::string  getOption(const CommandLineOption& name) const
+    {
+        return getOption(name.first);
+    }
     std::string  getOption(const std::string& name) const
     {
         auto item = findConstItem(name);
@@ -155,53 +163,57 @@ public:
 
     unsigned int parse(unsigned int argc, const char **argv)
     {
-	    Item* curarg = nullptr;
+	    Item* curArg = nullptr;
 
 	    for (unsigned int ii = 1; ii < argc; ++ii)
         {
             std::string arg = argv[ii];
+            bool found = false;
 
-            if (arg[0] == '-')
+            if (arg.size() > 1 && arg[0] == '-')
             {
-                if (arg.size() < 2 || arg[0] != '-')
+                if (arg[1] == '-')
                 {
-                    return ii;
+                    found = arg.size() > 2;
                 }
-
-                if (arg[1] != '-')
+                else
                 {
-                    parseShort(arg);
-                    continue;
-                }
-
-                Item* oldarg = curarg;
-
-                curarg = parseFull(arg);
-
-                if (curarg)
-                {
-                    if (curarg->isSwitch)
-                    {
-                        curarg = nullptr;
-                    }
-                    else if (curarg->isSet)
-                    {
-                        curarg = nullptr;
-                    }
-                    continue;
-                }
-
-                if (oldarg)
-                {
-                    curarg = oldarg;
+                    found = true;
                 }
             }
 
-            if (curarg)
+            if (found)
             {
-                curarg->value = arg;
-                ++curarg->isSet;
-                curarg = nullptr;
+                Item* oldArg = curArg;
+                bool assigned = false;
+
+                curArg = (arg[1] != '-') ? parseShort(arg) : parseFull(arg, assigned);
+
+                if (assigned)
+                {
+                    continue;
+                }
+
+                if (curArg)
+                {
+                    if (curArg->isSwitch)
+                    {
+                        curArg = nullptr;
+                    }
+                    continue;
+                }
+
+                if (oldArg)
+                {
+                    curArg = oldArg;
+                }
+            }
+
+            if (curArg)
+            {
+                curArg->value = arg;
+                ++curArg->isSet;
+                curArg = nullptr;
                 continue;
             }
             else
@@ -238,25 +250,34 @@ private:
         return nullptr;
     }
 
-    void parseShort(const std::string& arg)
+    CommandLine::Item* parseShort(const std::string& arg)
     {
         std::string str = arg.substr(1);
+        CommandLine::Item* lastItem = nullptr;
+        
         for (auto& item : m_list)
         {
             auto pos = str.find(item.shortname);
             if(pos != std::string::npos)
             {
-                ++item.isSet;
+                lastItem = &item;
+                if (item.isSwitch)
+                {
+                    ++item.isSet;
+                }
             }
         }
+
+        return arg.size() == 2 ? lastItem : nullptr;
     }
 
-    Item* parseFull(const std::string& arg)
+    Item* parseFull(const std::string& arg, bool& assigned)
     {
         std::string name = arg.substr(2);
         std::string value = "";
         auto pos = name.find('=');
 
+        assigned = false;
         if (pos != std::string::npos)
         {
             value = name.substr(pos + 1);
@@ -267,10 +288,17 @@ private:
         {
             if (item.fullname == name)
             {
-                item.isSet += pos >= 0;
-                if (value.size())
+                if (item.isSwitch)
                 {
+                    //item.isSet += pos >= 0;
+                    ++item.isSet;
+                }
+                else if (value.size())
+                {
+                    ++item.isSet;
                     item.value = value;
+                    assigned = true;
+                    return nullptr;
                 }
 
                 return &item;

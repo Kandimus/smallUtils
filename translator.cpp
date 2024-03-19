@@ -194,7 +194,7 @@ void Translator::init(const rapidjson::Document& root)
         return;
     }
 
-    if (root["version"].GetInt() != Version::Json)
+    if (root["version"].GetInt() != TranslatorVersion::Json)
     {
         return;
     }

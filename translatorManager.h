@@ -39,7 +39,7 @@ public:
 
     const Translator* getTranslator(Language l) const;
     const Translator* addTranslator(Language l);
-    std::vector<std::string> getTranslatorsList() const;
+    VectorOfStrings getTranslatorsList() const;
 
     bool addText(const std::string& sid, const std::string& text);
 
@@ -81,7 +81,7 @@ protected:
 
 protected:
     std::vector<TranslatorCreator*> m_translator;
-    char m_delimer = '|';
+    char m_delimer = ',';
     std::string m_translationMissing = "<# Translation missing #>";
 };
 

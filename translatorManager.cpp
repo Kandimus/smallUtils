@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <fstream>
 #include <sstream>
-#include <sstream>
 
 #ifdef TRANSLATOR_USING_RAPIDJSON
 #include "rapidjson/document.h"
@@ -17,14 +16,144 @@
 namespace su
 {
 
+#define PARSE_GET_NEX_CHAR     { ch = line[pos++]; }
+#define PARSE_CHECK_DELIMER    if (!ch || ch == delimer) { state = STATE::DELIMER; break; }
+
+static bool parseLine(const std::string& line, char delimer, VectorOfStrings& out)
+{
+    enum class STATE
+    {
+        START = 0,
+        PLAIN_TEXT,
+        ESCAPED_TEXT,
+        ESCAPED_QUOTES,
+        DELIMER,
+        FINISH,
+    };
+    
+    STATE state = STATE::START;
+    std::string str;
+    char ch = 0;
+    size_t pos = 0;
+
+    out.clear();
+
+    while (state != STATE::FINISH)
+    {
+        switch (state)
+        {
+            case STATE::START:
+                str = "";
+                PARSE_GET_NEX_CHAR;
+                PARSE_CHECK_DELIMER;
+
+                if (ch == '"')
+                {
+                    state = STATE::ESCAPED_TEXT;
+                    break;
+                }
+
+                --pos;
+                state = STATE::PLAIN_TEXT;
+                break;
+
+            case STATE::PLAIN_TEXT:
+                PARSE_GET_NEX_CHAR;
+                PARSE_CHECK_DELIMER;
+
+                str += ch;
+                break;
+
+            case STATE::ESCAPED_TEXT:
+                PARSE_GET_NEX_CHAR;
+
+                if (!ch)
+                {
+                    return false;
+                }
+
+                if (ch == '"')
+                {
+                    state = STATE::ESCAPED_QUOTES;
+                    break;
+                }
+
+                str += ch;
+                break;
+
+            case STATE::ESCAPED_QUOTES:
+                PARSE_GET_NEX_CHAR;
+                PARSE_CHECK_DELIMER;
+
+                if (ch == '"')
+                {
+                    str += '"';
+                    state = STATE::ESCAPED_TEXT;
+                    break;
+                }
+
+                out.clear();
+                return false;
+
+            case STATE::DELIMER:
+                out.push_back(str);
+                state = ch ? STATE::START : STATE::FINISH;
+                break;
+        }
+    }
+
+    return true;
+}
+
+static std::string escapeLine(char delimer, const VectorOfStrings& strings)
+{
+    std::string out = "";
+    bool needComma = false;
+
+    for (const auto& item : strings)
+    {
+        if (needComma)
+        {
+            out += ',';
+        }
+        needComma = true;
+
+        if (std::string::npos == item.find(delimer) && std::string::npos == item.find('"'))
+        {
+            out += item;
+            continue;
+        }
+        
+        std::string escaped = "\"";
+        for (auto ch : item)
+        {
+            if (ch == '"')
+            {
+                escaped += '"';
+            }
+            escaped += ch;
+        }
+        escaped += '"';
+
+        out += escaped;
+    }
+
+    return out + "\n";
+}
+
 static std::string getDictionaryFilename(const std::string& filename, const TranslatorCreator* tr)
 {
     return filename + "." + tr->getMarker() + ".csv";
 }
 
-static std::vector<std::string> getPluralsFromText(const std::string& text)
+static std::string getTranslatorVersion()
 {
-    std::vector<std::string> out;
+    return std::to_string(TranslatorVersion::major) + "." + std::to_string(TranslatorVersion::minor);
+}
+
+static VectorOfStrings getPluralsFromText(const std::string& text)
+{
+    VectorOfStrings out;
 
     // check a text for dictionary markers
     std::size_t begPos = 0;
@@ -96,29 +225,27 @@ size_t TranslatorCreator::clearSidByPrefix(const std::string& prefix)
 bool TranslatorCreator::save(const std::string& filename, char delimer) const
 {
     std::string out = "";
+    VectorOfStrings element;
 
-    out += Version::headerDict + delimer;
-    out += std::to_string(Version::major) + std::string(".") + std::to_string(Version::minor);
-    out += "\n";
+    out += escapeLine(delimer, { TranslatorVersion::headerDict, getTranslatorVersion() });
 
-    out += std::string("sid");
+    element.push_back("sid");
     for (int ii = 0; ii < getPluralForms(); ++ii)
     {
-        out += delimer + std::string("Form") + std::to_string(ii + 1);
+        element.push_back("Form" + std::to_string(ii + 1));
     }
-    out += "\n";
+    out += escapeLine(delimer, element);
 
     for (const auto& item : m_dictionary)
     {
         auto sid = item.first;
         auto plurals = item.second;
 
-        out += sid;
-        for (int ii = 0; ii < getPluralForms(); ++ii)
-        {
-            out += delimer + plurals[ii];
-        }
-        out += "\n";
+        element.clear();
+        element.push_back(sid);
+        element.insert(element.end(), plurals.begin(), plurals.end());
+
+        out += escapeLine(delimer, element);
     }
 
     std::ofstream outFile(filename);
@@ -150,16 +277,26 @@ bool TranslatorCreator::load(const std::string& filename, char delimer)
 
     while (std::getline(buffer, line))
     {
-        auto element = String_slit(line, delimer);
+        VectorOfStrings element;
+
+        if (!parseLine(line, delimer, element))
+        {
+            return false;
+        }
 
         if (lineno == 1)
         {
-            if (element.size() != 2)
+            if (element.size() < 2)
             {
                 return false;
             }
 
-            if (element[0] != Version::headerDict)
+            if (element[0] != TranslatorVersion::headerDict)
+            {
+                return false;
+            }
+
+            if (element[1] != getTranslatorVersion())
             {
                 return false;
             }
@@ -309,7 +446,7 @@ bool TranslatorCreator::doExportJson(const std::string& filename) const
 
     document.SetObject();
     document.AddMember("language", json_lang, document.GetAllocator());
-    document.AddMember("version", Version::Json, document.GetAllocator());
+    document.AddMember("version", TranslatorVersion::Json, document.GetAllocator());
     document.AddMember("strings", strings, document.GetAllocator());
     document.AddMember("dictionary", dict, document.GetAllocator());
 
@@ -357,9 +494,9 @@ const Translator* TranslatorManager::addTranslator(Language l)
     return t;
 }
 
-std::vector<std::string> TranslatorManager::getTranslatorsList() const
+VectorOfStrings TranslatorManager::getTranslatorsList() const
 {
-    std::vector<std::string> out;
+    VectorOfStrings out;
 
     for (auto tr : m_translator)
     {
@@ -440,28 +577,29 @@ std::string TranslatorManager::fix()
 bool TranslatorManager::save(const std::string& filename) const
 {
     std::string out = "";
+    VectorOfStrings element;
 
-    out += Version::header + m_delimer;
-    out += std::to_string(Version::major) + std::string(".") + std::to_string(Version::minor);
-    out += "\n";
+    out += escapeLine(m_delimer, { TranslatorVersion::header, getTranslatorVersion() });
 
-    out += std::string("sid");
+    element.clear();
+    element.push_back("sid");
     for (const auto translator : m_translator)
     {
-        out += m_delimer + translator->getMarker();
+        element.push_back(translator->getMarker());
     }
-    out += "\n";
+    out += escapeLine(m_delimer, element);
 
     for (const auto& item : m_translator[0]->getRawData())
     {
         const std::string& key = item.first;
 
-        out += key;
+        element.clear();
+        element.push_back(key);
         for (const auto translator : m_translator)
         {
-            out += m_delimer + translator->getText(key);
+            element.push_back(translator->getText(key));
         }
-        out += "\n";
+        out += escapeLine(m_delimer, element);
     }
 
     std::ofstream outFile(filename);
@@ -499,16 +637,26 @@ bool TranslatorManager::load(const std::string& filename)
     uint32_t lineno = 1;
     while (std::getline(buffer, line))
     {
-        auto element = String_slit(line, m_delimer);
+        std::vector<std::string> element;
+
+        if (!parseLine(line, m_delimer, element))
+        {
+            return false;
+        }
 
         if (lineno == 1)
         {
-            if (element.size() != 2)
+            if (element.size() < 2)
             {
                 return false;
             }
 
-            if (element[0] != Version::header)
+            if (element[0] != TranslatorVersion::header)
+            {
+                return false;
+            }
+
+            if (element[1] != getTranslatorVersion())
             {
                 return false;
             }

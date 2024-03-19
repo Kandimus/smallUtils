@@ -6,12 +6,16 @@
 
 
 #include <assert.h>
+#include <string>
+#include <vector>
 #include <unordered_map>
 #include <unordered_set>
 
 #ifdef TRANSLATOR_USING_RAPIDJSON
 #include "rapidjson/document.h"
 #endif
+
+using VectorOfStrings = std::vector<std::string>;
 
 namespace su
 {
@@ -23,7 +27,7 @@ enum Language
     RU_RU,
 };
 
-namespace Version
+namespace TranslatorVersion
 {
 const int major = 1;
 const int minor = 0;
@@ -98,7 +102,7 @@ protected:
     uint8_t m_pluralForms;
     std::string m_marker;
 
-    std::unordered_map<std::string, std::vector<std::string>> m_dictionary;
+    std::unordered_map<std::string, VectorOfStrings> m_dictionary;
     std::unordered_map<std::string, std::string> m_data;
 };
 

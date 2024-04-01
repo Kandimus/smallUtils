@@ -177,6 +177,9 @@ public:
     uint32_t add(const std::string& str);
     std::vector<uint32_t> add(const StringArray& v);
 
+    std::string get(uint32_t idx) const
+        { return idx < m_data.size() ? m_data[idx] : ""; }
+
     static const std::string& marker()
         { return m_marker; }
 
@@ -223,6 +226,20 @@ inline DataBuffer& operator << (DataBuffer& db, const std::vector<uint32_t>& v)
     for (auto item : v)
     {
         db << item;
+    }
+    return db;
+}
+
+inline DataBuffer& operator >> (DataBuffer& db, std::vector<uint32_t>& v)
+{
+    size_t count;
+    
+    db >> count;
+    v.clear();
+    v.resize(count);
+    for (auto item : v)
+    {
+        db >> item;
     }
     return db;
 }

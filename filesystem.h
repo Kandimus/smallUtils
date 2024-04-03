@@ -13,6 +13,7 @@
 
 using StringArray = std::vector<std::string>;
 using ByteArray = std::vector<uint8_t>;
+using CharArray = std::vector<int8_t>;
 
 #ifndef SU_ASSERT
 #ifdef _DEBUG
@@ -220,7 +221,12 @@ protected:
     std::vector<BaseBuffer*> m_buffer;
 };
 
-inline DataBuffer& operator << (DataBuffer& db, const std::vector<uint32_t>& v)
+} // namespace FileSystem
+
+} // namespace su
+
+template<class T>
+inline su::FileSystem::DataBuffer& operator << (su::FileSystem::DataBuffer& db, const std::vector<T>& v)
 {
     db << v.size();
     for (auto item : v)
@@ -230,10 +236,11 @@ inline DataBuffer& operator << (DataBuffer& db, const std::vector<uint32_t>& v)
     return db;
 }
 
-inline DataBuffer& operator >> (DataBuffer& db, std::vector<uint32_t>& v)
+template<class T>
+inline su::FileSystem::DataBuffer& operator >> (su::FileSystem::DataBuffer& db, std::vector<T>& v)
 {
     size_t count;
-    
+
     db >> count;
     v.clear();
     v.resize(count);
@@ -243,9 +250,5 @@ inline DataBuffer& operator >> (DataBuffer& db, std::vector<uint32_t>& v)
     }
     return db;
 }
-
-} // namespace FileSystem
-} //
-
 
 #endif

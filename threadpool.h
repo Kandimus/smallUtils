@@ -158,7 +158,7 @@ private:
 
     std::atomic<bool> m_exit = false;
     std::atomic<TaskID> m_lastIndex = 0;
-}
+};
 
 }
 

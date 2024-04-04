@@ -11,33 +11,19 @@
 #include <vector>
 #include <fstream>
 
+#include "i_stream.h"
+
 using StringArray = std::vector<std::string>;
 using ByteArray = std::vector<uint8_t>;
 using CharArray = std::vector<int8_t>;
-
-#ifndef SU_ASSERT
-#ifdef _DEBUG
-#define SU_ASSERT(_Expression) (void)( (!!(_Expression)) || (__debugbreak(), 1) )
-#define SU_BREAKPOINT() (__debugbreak())
-#else
-#define SU_ASSERT(x) ((void)0)
-#define SU_BREAKPOINT() ((void)0)
-#endif
-#endif
 
 namespace su
 {
 namespace FileSystem
 {
 
-enum class Seek
-{
-    Beg = 0,
-    Cur,
-    End,
-};
-
 class BaseHeader;
+
 
 class BaseBuffer
 {
@@ -49,8 +35,8 @@ public:
         { return m_name; }
 
     virtual const std::string& getMarker() = 0;
-    virtual bool read(std::ifstream& ifs, uint64_t size) = 0;
-    virtual bool write(std::ofstream& ofs) const = 0;
+    virtual bool read(IStreamIn& ifs, uint64_t size) = 0;
+    virtual bool write(IStreamOut& ofs) const = 0;
 
     virtual void setParent(BaseHeader* hdr)
         { m_parent = hdr; }
@@ -63,7 +49,7 @@ protected:
     const BaseHeader* m_parent = nullptr;
 };
 
-//
+// DataBuffer
 
 class DataBuffer : public BaseBuffer
 {
@@ -73,8 +59,8 @@ public:
 
     // BaseBuffer
     virtual const std::string& getMarker() override { return marker(); }
-    virtual bool read(std::ifstream& ifs, uint64_t size) override;
-    virtual bool write(std::ofstream& ofs) const override;
+    virtual bool read(IStreamIn& ifs, uint64_t size) override;
+    virtual bool write(IStreamOut& ofs) const override;
 
     // DataBuffer
     DataBuffer& operator << (bool val) { uint8_t v = !!val; return add(&v, sizeof(v)); }
@@ -171,8 +157,8 @@ public:
 
     // BaseBuffer
     virtual const std::string& getMarker() override { return marker(); }
-    virtual bool read(std::ifstream& ifs, uint64_t size) override;
-    virtual bool write(std::ofstream& ofs) const override;
+    virtual bool read(IStreamIn& ifs, uint64_t size) override;
+    virtual bool write(IStreamOut& ofs) const override;
 
     //
     uint32_t add(const std::string& str);
@@ -204,19 +190,12 @@ public:
     static uint8_t getVersionMajor() { return 1; }
     static uint8_t getVersionMinor() { return 0; }
 
-    bool write(std::ofstream& ofs) const;
-    bool read(std::ifstream& ifs);
+    bool read(IStreamIn& ifs);
+    bool write(IStreamOut& ofs) const;
 
     BaseBuffer* getBuffer(const std::string& name);
 
 protected:
-    struct BufferOffset
-    {
-        std::streampos pos;
-        uint64_t offset;
-        uint32_t size;
-    };
-
     std::string m_type;
     std::vector<BaseBuffer*> m_buffer;
 };

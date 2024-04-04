@@ -1,4 +1,6 @@
+
 #include "filesystem.h"
+#include "defines.h"
 
 namespace su
 {
@@ -87,7 +89,7 @@ size_t unpackUnsigned(uint64_t& v, uint8_t* buff)
     return 0;
 }
 
-std::string readCString(std::ifstream& ifs)
+static std::string readCString(IStreamIn& ifs)
 {
     char ch = -1;
     std::string out = "";
@@ -101,6 +103,8 @@ std::string readCString(std::ifstream& ifs)
     }
     return out;
 }
+
+// DataBuffer
 
 DataBuffer& DataBuffer::add(const void* buf, size_t size)
 {
@@ -208,16 +212,16 @@ void DataBuffer::seek(int64_t pos, Seek way)
     m_pos = newpos < 0 ? 0 : ((size_t)newpos < m_data.size() ? pos : m_data.size());
 }
 
-bool DataBuffer::read(std::ifstream& ifs, uint64_t size)
+bool DataBuffer::read(IStreamIn& ifs, uint64_t size)
 {
     m_data.clear();
     m_data.resize(size);
-    return ifs.read(reinterpret_cast<char*>(m_data.data()), size) ? true : false;
+    return ifs.read(m_data.data(), size) ? true : false;
 }
 
-bool DataBuffer::write(std::ofstream& ofs) const
+bool DataBuffer::write(IStreamOut& ofs) const
 {
-    ofs.write(reinterpret_cast<const char*>(m_data.data()), m_data.size());
+    ofs.write(m_data.data(), m_data.size());
 
     return true;
 }
@@ -264,7 +268,7 @@ std::vector<uint32_t> StringBuffer::add(const StringArray& v)
     return out;
 }
 
-bool StringBuffer::read(std::ifstream& ifs, uint64_t size)
+bool StringBuffer::read(IStreamIn& ifs, uint64_t size)
 {
     DataBuffer db("");
 
@@ -287,7 +291,7 @@ bool StringBuffer::read(std::ifstream& ifs, uint64_t size)
     return true;
 }
 
-bool StringBuffer::write(std::ofstream& ofs) const
+bool StringBuffer::write(IStreamOut& ofs) const
 {
     DataBuffer db("");
 
@@ -302,6 +306,13 @@ bool StringBuffer::write(std::ofstream& ofs) const
 
 // BaseHeader
 
+struct BufferOffset
+{
+    size_t pos;
+    size_t offset;
+    uint32_t size;
+};
+
 BaseHeader::~BaseHeader()
 {
     for (auto item : m_buffer)
@@ -313,7 +324,7 @@ BaseHeader::~BaseHeader()
     }
 }
 
-bool BaseHeader::write(std::ofstream& ofs) const
+bool BaseHeader::write(IStreamOut& ofs) const
 {
     BufferOffset header;
     std::vector<BufferOffset> offset;
@@ -322,16 +333,16 @@ bool BaseHeader::write(std::ofstream& ofs) const
 
     uint8_t verMajor = getVersionMajor();
     uint8_t verMinor = getVersionMinor();
-    ofs.write(reinterpret_cast<const char*>(&verMajor), sizeof(verMajor));
-    ofs.write(reinterpret_cast<const char*>(&verMinor), sizeof(verMajor));
+    ofs.write(&verMajor, sizeof(verMajor));
+    ofs.write(&verMinor, sizeof(verMajor));
 
-    header.pos = ofs.tellp();
+    header.pos = ofs.tell();
     header.size = 0;
-    ofs.write(reinterpret_cast<const char*>(&header.size), sizeof(header.size));
-    header.offset = ofs.tellp();
+    ofs.write(&header.size, sizeof(header.size));
+    header.offset = ofs.tell();
 
     uint16_t count = static_cast<uint16_t>(m_buffer.size());
-    ofs.write(reinterpret_cast<const char*>(&count), sizeof(count));
+    ofs.write(&count, sizeof(count));
 
     offset.resize(m_buffer.size());
     for (int ii = 0; ii < m_buffer.size(); ++ii)
@@ -342,38 +353,38 @@ bool BaseHeader::write(std::ofstream& ofs) const
         ofs.write(marker.c_str(), marker.size() + 1);
         ofs.write(name.c_str(), name.size() + 1);
 
-        offset[ii].pos = ofs.tellp();
+        offset[ii].pos = ofs.tell();
         offset[ii].offset = 0;
         offset[ii].size = 0;
 
-        ofs.write(reinterpret_cast<const char*>(&offset[ii].offset), sizeof(offset[ii].offset));
-        ofs.write(reinterpret_cast<const char*>(&offset[ii].size), sizeof(offset[ii].size));
+        ofs.write(&offset[ii].offset, sizeof(offset[ii].offset));
+        ofs.write(&offset[ii].size, sizeof(offset[ii].size));
     }
 
-    header.size = static_cast<uint32_t>(static_cast<uint64_t>(ofs.tellp()) - header.offset);
+    header.size = static_cast<uint32_t>(ofs.tell() - header.offset);
 
     for (int ii = 0; ii < m_buffer.size(); ++ii)
     {
-        offset[ii].offset = ofs.tellp();
+        offset[ii].offset = ofs.tell();
         m_buffer[ii]->write(ofs);
-        offset[ii].size = static_cast<uint32_t>(static_cast<uint64_t>(ofs.tellp()) - offset[ii].offset);
+        offset[ii].size = static_cast<uint32_t>(ofs.tell() - offset[ii].offset);
     }
 
-    ofs.seekp(header.pos, std::ios_base::beg);
-    ofs.write(reinterpret_cast<const char*>(&header.size), sizeof(header.size));
+    ofs.seek(header.pos, Seek::Beg);
+    ofs.write(&header.size, sizeof(header.size));
 
     for (const BufferOffset& item : offset)
     {
-        ofs.seekp(item.pos, std::ios_base::beg);
+        ofs.seek(item.pos, Seek::Beg);
 
-        ofs.write(reinterpret_cast<const char*>(&item.offset), sizeof(item.offset));
-        ofs.write(reinterpret_cast<const char*>(&item.size), sizeof(item.size));
+        ofs.write(&item.offset, sizeof(item.offset));
+        ofs.write(&item.size, sizeof(item.size));
     }
 
     return true;
 }
 
-bool BaseHeader::read(std::ifstream& ifs)
+bool BaseHeader::read(IStreamIn& ifs)
 {
     std::string type = readCString(ifs);
     if (m_type.size() && m_type != type)
@@ -383,26 +394,26 @@ bool BaseHeader::read(std::ifstream& ifs)
 
     uint8_t verMajor = 0;
     uint8_t verMinor = 0;
-    ifs.read(reinterpret_cast<char*>(&verMajor), 1);
-    ifs.read(reinterpret_cast<char*>(&verMinor), 1);
+    ifs.read(&verMajor, sizeof(verMajor));
+    ifs.read(&verMinor, sizeof(verMinor));
     if (verMajor != getVersionMajor() || verMinor != getVersionMinor())
     {
         return false;
     }
 
     BufferOffset header;
-    ifs.read(reinterpret_cast<char*>(&header.size), sizeof(header.size));
+    ifs.read(&header.size, sizeof(header.size));
 
     uint16_t count = 0;
-    ifs.read(reinterpret_cast<char*>(&count), sizeof(count));
+    ifs.read(&count, sizeof(count));
     for (int ii = 0; ii < count; ++ii)
     {
         BufferOffset offset;
         std::string marker = readCString(ifs);
         std::string name = readCString(ifs);
 
-        ifs.read(reinterpret_cast<char*>(&offset.offset), sizeof(offset.offset));
-        ifs.read(reinterpret_cast<char*>(&offset.size), sizeof(offset.size));
+        ifs.read(&offset.offset, sizeof(offset.offset));
+        ifs.read(&offset.size, sizeof(offset.size));
 
         BaseBuffer* bb = bufferFabric(name, marker);
         if (!bb)
@@ -411,12 +422,12 @@ bool BaseHeader::read(std::ifstream& ifs)
             continue;
         }
 
-        auto pos = ifs.tellg();
-        ifs.seekg(offset.offset, std::ios_base::beg);
+        auto pos = ifs.tell();
+        ifs.seek(offset.offset, Seek::Beg);
         bb->read(ifs, offset.size);
         m_buffer.push_back(bb);
 
-        ifs.seekg(pos, std::ios_base::beg);
+        ifs.seek(pos, Seek::Beg);
     }
 
     return true;

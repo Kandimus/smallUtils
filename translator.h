@@ -57,6 +57,9 @@ public:
     Language getLanguage() const
         { return m_language; }
 
+    bool isInit() const
+        { return m_isInit; }
+
     inline std::string getText(const std::string& sid) const;
     std::string getText(const std::string& sid, int value) const;
     bool contains(const std::string& sid) const
@@ -101,6 +104,7 @@ protected:
     uint8_t m_pluralRule;
     uint8_t m_pluralForms;
     std::string m_marker;
+    bool m_isInit = false;
 
     std::unordered_map<std::string, VectorOfStrings> m_dictionary;
     std::unordered_map<std::string, std::string> m_data;

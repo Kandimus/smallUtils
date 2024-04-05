@@ -262,6 +262,8 @@ void Translator::init(const rapidjson::Document& root)
         }
         m_dictionary[key] = v;
     }
+
+    m_isInit = true;
 }
 #endif
 

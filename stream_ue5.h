@@ -18,7 +18,7 @@ public:
 
     virtual size_t read(void* data, size_t size) override
     {
-        if (size + m_pos > m_data.size() || !size)
+        if (size + m_pos > m_data.Num() || !size)
         {
             return 0;
         }
@@ -46,9 +46,9 @@ public:
         }
         else if (way == Seek::End)
         {
-            newpos = m_data.size() - pos;
+            newpos = m_data.Num() - pos;
         }
-        m_pos = newpos < 0 ? 0 : ((size_t)newpos < m_data.size() ? pos : m_data.size());
+        m_pos = newpos < 0 ? 0 : ((size_t)newpos < m_data.Num() ? pos : m_data.Num());
     }
 
 protected:
@@ -64,7 +64,7 @@ public:
 
     virtual size_t write(const void* data, size_t size) override
     {
-        uint8_t* buf = reinterpret_cast<uint8_t*>(data);
+        const uint8_t* buf = reinterpret_cast<const uint8_t*>(data);
         for (size_t ii = 0; ii < size; ++ii, ++m_pos, ++buf)
         {
             if (m_pos >= m_data.Num())
@@ -91,9 +91,9 @@ public:
         }
         else if (way == Seek::End)
         {
-            newpos = m_data.size() - pos;
+            newpos = m_data.Num() - pos;
         }
-        m_pos = newpos < 0 ? 0 : ((size_t)newpos < m_data.size() ? pos : m_data.size());
+        m_pos = newpos < 0 ? 0 : ((size_t)newpos < m_data.Num() ? pos : m_data.Num());
     }
 
 protected:

@@ -296,7 +296,7 @@ std::string String_rtrim(const std::string& str, const std::string& whitespace)
         return str;
     }
 
-    int ii = str.size() - 1;
+    int ii = int(str.size() - 1);
     for (; ii >= 0; --ii)
     {
         if (whitespace.find(str[ii]) == std::string::npos)

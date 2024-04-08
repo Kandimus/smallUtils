@@ -7,15 +7,8 @@
 //
 //#define SU_FILESYSTEM_NOT_USING_PACKING
 
-#include <string>
-#include <vector>
-#include <fstream>
-
+#include "typedef.h"
 #include "i_stream.h"
-
-using StringArray = std::vector<std::string>;
-using ByteArray = std::vector<uint8_t>;
-using CharArray = std::vector<int8_t>;
 
 namespace su
 {
@@ -132,7 +125,7 @@ public:
         { return m_data; }
 
     virtual bool isEof() const
-        { return m_pos >= m_data.size(); }
+        { return m_pos >= VECTOR_SIZE(m_data); }
 
     virtual uint64_t tell() const
         { return m_pos; }

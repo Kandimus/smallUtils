@@ -414,13 +414,12 @@ bool TranslatorCreator::doExportJson(const std::string& filename) const
         strings.AddMember(json_key, json_text, document.GetAllocator());
     }
 
-    rapidjson::Value dict(rapidjson::kArrayType);
+    rapidjson::Value dict(rapidjson::kObjectType);
     for (const auto& item : m_dictionary)
     {
         const auto& key = item.first;
         const auto& plurals = item.second;
 
-        rapidjson::Value json_value(rapidjson::kObjectType);
         rapidjson::Value json_plurals(rapidjson::kArrayType);
         rapidjson::Value json_key;
         rapidjson::Value json_text;
@@ -433,9 +432,7 @@ bool TranslatorCreator::doExportJson(const std::string& filename) const
         }
 
         json_key.SetString(rapidjson::StringRef(key.c_str(), key.size()));
-        json_value.AddMember(json_key, json_plurals, document.GetAllocator());
-
-        dict.PushBack(json_value, document.GetAllocator());
+        dict.AddMember(json_key, json_plurals, document.GetAllocator());
     }
 
     rapidjson::Value json_lang;

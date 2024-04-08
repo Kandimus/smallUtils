@@ -216,49 +216,33 @@ void Translator::init(const rapidjson::Document& root)
     const rapidjson::Value& json_strs = root["strings"];
     const rapidjson::Value& json_dict = root["dictionary"];
 
-    if (!json_strs.IsArray() || !json_dict.IsArray())
+    if (!json_strs.IsObject() || !json_dict.IsObject())
     {
         return;
     }
 
-    for (rapidjson::SizeType ii = 0; ii < json_strs.Size(); ++ii)
+    for (auto val = json_strs.MemberBegin(); val != json_strs.MemberEnd(); ++val)
     {
-        const rapidjson::Value& item = json_strs[ii];
+        std::string key = val->name.GetString();
+        std::string text = val->value.GetString();
 
-        if (!item.IsObject() || item.MemberCount() != 1)
-        {
-            init(Language::UNDEF);
-            return;
-        }
-
-        std::string key = item.MemberBegin()->name.GetString();
-        std::string text = item.MemberBegin()->value.GetString();
         m_data[key] = text;
     }
 
-    for (rapidjson::SizeType ii = 0; ii < json_dict.Size(); ++ii)
+    for (auto val = json_dict.MemberBegin(); val != json_dict.MemberEnd(); ++val)
     {
-        const rapidjson::Value& item = json_dict[ii];
+        std::string key = val->name.GetString();
 
-        if (!item.IsObject() || item.MemberCount() != 1)
-        {
-            init(Language::UNDEF);
-            return;
-        }
-
-        std::string key = item.MemberBegin()->name.GetString();
-        const rapidjson::Value& arr = item.MemberBegin()->value;
-
-        if (!arr.IsArray() || arr.Size() != getPluralForms())
+        if (!val->value.IsArray() || val->value.Size() != getPluralForms())
         {
             init(Language::UNDEF);
             return;
         }
 
         std::vector<std::string> v;
-        for (rapidjson::SizeType jj = 0; jj < arr.Size(); ++jj)
+        for (rapidjson::SizeType jj = 0; jj < val->value.Size(); ++jj)
         {
-            v.push_back(arr[jj].GetString());
+            v.push_back(val->value[jj].GetString());
         }
         m_dictionary[key] = v;
     }

@@ -400,21 +400,18 @@ bool TranslatorCreator::doExportJson(const std::string& filename) const
 {
     rapidjson::Document document;
 
-    rapidjson::Value strings(rapidjson::kArrayType);
+    rapidjson::Value strings(rapidjson::kObjectType);
     for (const auto& item : m_data)
     {
         const auto& key = item.first;
         const auto& text = item.second;
 
-        rapidjson::Value json_value(rapidjson::kObjectType);
         rapidjson::Value json_key;
         rapidjson::Value json_text;
 
         json_key.SetString(rapidjson::StringRef(key.c_str(), key.size()));
         json_text.SetString(rapidjson::StringRef(text.c_str(), text.size()));
-        json_value.AddMember(json_key, json_text, document.GetAllocator());
-
-        strings.PushBack(json_value, document.GetAllocator());
+        strings.AddMember(json_key, json_text, document.GetAllocator());
     }
 
     rapidjson::Value dict(rapidjson::kArrayType);

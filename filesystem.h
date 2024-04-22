@@ -223,9 +223,9 @@ inline su::FileSystem::DataBuffer& operator >> (su::FileSystem::DataBuffer& db, 
     db >> count;
     v.clear();
     v.resize(count);
-    for (auto item : v)
+    for (size_t ii = 0; ii < count; ++ii)
     {
-        db >> item;
+        db >> v[ii];
     }
     return db;
 }

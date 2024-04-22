@@ -2,7 +2,13 @@
 #define _SMALLUTILL_TRANSLATOR_H_
 #pragma once
 
-#define TRANSLATOR_USING_RAPIDJSON
+// Add the necessary definition to use one of following of JSON libraries 
+// 
+// Rapid Json
+// #define TRANSLATOR_USING_RAPIDJSON
+//
+// Nlohmann Json
+// #define TRANSLATOR_USING_NLOHMANNJSON
 
 
 #include <assert.h>
@@ -13,6 +19,10 @@
 
 #ifdef TRANSLATOR_USING_RAPIDJSON
 #include "rapidjson/document.h"
+#endif
+
+#ifdef TRANSLATOR_USING_NLOHMANNJSON
+#include "nlohmann/json.hpp"
 #endif
 
 using VectorOfStrings = std::vector<std::string>;

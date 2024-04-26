@@ -25,6 +25,7 @@ extern std::vector<std::string> String_slit(const std::string& text, char separa
 extern int         String_IsValidHex(const char *str, unsigned int &val);
 extern int         String_BufferSize(const char *format, va_list arg_ptr);
 extern std::string String_format(const char *format, ...);
+extern std::string String_format2(const char* format, ...);
 extern std::string String_vaformat(const char *format, va_list arg_ptr);
 extern std::string String_FileTime(time_t t);
 extern std::string String_tolower(const std::string &str);

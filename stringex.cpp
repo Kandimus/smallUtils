@@ -93,7 +93,7 @@ std::string String_vaformat(const char *format, va_list arg_ptr)
     std::string result = "";
     char       *buff   = nullptr;
 
-    size_t s = vsnprintf_s(NULL, 0, 0xfffffffe, format, arg_ptr) + 1;
+    size_t s = _vsnprintf_s(NULL, 0, 0xffffffff, format, arg_ptr) + 1;
     buff = new char[s];
     if(buff)
     {

@@ -52,7 +52,7 @@ std::vector<std::string> String_slit(const std::string& text, char separator)
     return output;
 }
 
-int String_IsValidHex(const char *str, unsigned int &val)
+int String_isValidHex(const char *str, unsigned int &val)
 {
     unsigned int ii = 0;
     unsigned int xx = 0;

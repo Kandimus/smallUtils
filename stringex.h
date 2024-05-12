@@ -37,4 +37,6 @@ extern std::string String_FromBuffer(const unsigned char *buf, unsigned int bufs
 extern std::string String_ltrim(const std::string& str, const std::string& whitespace);
 extern std::string String_rtrim(const std::string& str, const std::string& whitespace);
 extern std::string String_trim(const std::string& str, const std::string& whitespace);
+
+extern std::string String_rawFilename(const std::string& filename);
 }

@@ -319,4 +319,10 @@ std::string String_trim(const std::string& str, const std::string& whitespace)
     return out.size() ? String_rtrim(out, whitespace) : out;
 }
 
+std::string String_rawFilename(const std::string& filename)
+{
+    size_t lastIndex = filename.find_last_of(".");
+    return lastIndex < filename.size() ? filename.substr(0, lastIndex) : filename;
+}
+
 }

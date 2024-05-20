@@ -19,53 +19,57 @@ namespace su
 class Log
 {
 public:
-	enum Level
-	{
-		Error = 0,
-		Warning,
-		Info,
-		Notice,
-		Debug,
-		LevelLog__END
-	};
+    enum Level
+    {
+        Error = 0,
+        Warning,
+        Info,
+        Notice,
+        Debug,
+        LevelLog__END
+    };
 
-	// Singleton
-	virtual ~Log() = default;
-	Log(const Log&) = delete;
-	Log(const Log&&) = delete;
+    // Singleton
+    virtual ~Log() = default;
+    Log(const Log&) = delete;
+    Log(const Log&&) = delete;
 
-	static Log& instance();
+    static Log& instance();
 
 private:
-	Log() = default;
-	Log& operator=(Log&);
+    Log() = default;
+    Log& operator=(Log&);
 
 public:
-	void put(Level level, const char* source, uint32_t lineno, const std::string& text);
-	void putFormat(Level level, const char* source, uint32_t lineno, const char* format, ...);
-	
-	void setDir(const std::string& dir);
-	const std::string& getDir() const;
-	
-	void setFilename(const std::string& filename);
-	const std::string& getFilename(void) const;
-	
-	void setLevel(Level level);
-	Level getLevel(void) const;
-	
-	bool toTerminal(void) const;
-	void setTerminal(bool toTerminal);
+    void put(Level level, const char* source, uint32_t lineno, const std::string& text);
+    void putFormat(Level level, const char* source, uint32_t lineno, const char* format, ...);
+    
+    void setDir(const std::string& dir);
+    const std::string& getDir() const;
+    
+    void setFilename(const std::string& filename);
+    const std::string& getFilename(void) const;
+    
+    void setLevel(Level level);
+    Level getLevel(void) const;
+    
+    bool toTerminal(void) const;
+    void setTerminal(bool toTerminal);
 
-	std::list<std::string> getNews();
+    bool toFile() const;
+    void setFile(bool toFile);
+
+    std::list<std::string> getNews();
 
 private:
-	std::mutex m_mutex;
-	std::string m_dir = "";
-	std::string m_filename = "logs";
-	Level m_level = Level::Info;
-	bool m_toTerminal = true;
+    std::mutex m_mutex;
+    std::string m_dir = "";
+    std::string m_filename = "logs";
+    Level m_level = Level::Info;
+    bool m_toTerminal = true;
+    bool m_toFile = true;
 
-	std::list<std::string> m_list;
+    std::list<std::string> m_list;
 };
 
 }

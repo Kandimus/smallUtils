@@ -44,11 +44,14 @@ void Log::put(Level level, const char* source, uint32_t lineno, const std::strin
 
 	std::lock_guard<std::mutex> guard(m_mutex);
 
-	std::ofstream file(filename, std::ios_base::app);
-	if (file.is_open())
+	if (m_toFile)
 	{
-		file << fulltext;
-		file.close();
+		std::ofstream file(filename, std::ios_base::app);
+		if (file.is_open())
+		{
+			file << fulltext;
+			file.close();
+		}
 	}
 
 	if (level > m_level)
@@ -133,6 +136,16 @@ bool Log::toTerminal(void) const
 	return m_toTerminal;
 }
 
+bool Log::toFile() const
+{
+	return m_toFile;
+}
+
+void Log::setFile(bool toFile)
+{
+	m_toFile = toFile;
+}
+
 std::list<std::string> Log::getNews()
 {
 	std::lock_guard<std::mutex> guard(m_mutex);
@@ -140,4 +153,5 @@ std::list<std::string> Log::getNews()
 	return std::move(m_list);
 }
 
-}
+} // namespace su
+

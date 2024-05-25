@@ -319,24 +319,114 @@ std::string String_trim(const std::string& str, const std::string& whitespace)
     return out.size() ? String_rtrim(out, whitespace) : out;
 }
 
-std::string String_printfHexBuffer(const char* buf, size_t size, const std::string& prefix)
+std::string String_printfHexBuffer(const void* buf, size_t count, size_t size, const std::string& prefix)
 {
     std::string out = "";
 
-    out += prefix + "       00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n";
-    out += prefix + "     +------------------------------------------------\n";
+    if (size != 1 && size != 2 && size != 4 && size != 8)
+    {
+        return out;
+    }
 
-    size_t count = 0;
-    for (size_t ii = 0; ii < size; ++ii)
+    struct Format
+    {
+        const int8_t* pI8;
+        const int16_t* pI16;
+        const int32_t* pI32;
+        const int64_t* pI64;
+
+        char allign[8] = { 0 };
+        size_t mask;
+        char outline[512] = { 0 };
+        char valueFormat[8] = { 0 };
+        char countOffset[32] = { 0 };
+        char countFormat[32] = { 0 };
+    } format;
+
+    size_t lenOutline = (size * 2 + 1) * 16;
+    memset(format.outline, '-', lenOutline);
+    format.outline[lenOutline] = 0;
+
+    if (count <= 0xff)
+    {
+        strcpy_s(format.countFormat, sizeof(format.countFormat), "%02x |");
+        memset(format.countOffset, ' ', 2);
+        format.countOffset[2] = 0;
+    }
+    else if (count < 0xffff)
+    {
+        strcpy_s(format.countFormat, sizeof(format.countFormat), "%04x |");
+        memset(format.countOffset, ' ', 4);
+        format.countOffset[4] = 0;
+    }
+    else if (count < 0xffffffff)
+    {
+        strcpy_s(format.countFormat, sizeof(format.countFormat), "%08x |");
+        memset(format.countOffset, ' ', 8);
+        format.countOffset[8] = 0;
+    }
+    else
+    {
+        strcpy_s(format.countFormat, sizeof(format.countFormat), "%016x |");
+        memset(format.countOffset, ' ', 16);
+        format.countOffset[16] = 0;
+    }
+
+    switch (size)
+    {
+        case 1:
+            strcpy_s(format.allign, sizeof(format.allign), "");
+            strcpy_s(format.valueFormat, sizeof(format.valueFormat), " %02x");
+            format.mask = 0xff;
+            format.pI8 = (const int8_t*)buf;
+            break;
+        case 2:
+            strcpy_s(format.allign, sizeof(format.allign), " ");
+            strcpy_s(format.valueFormat, sizeof(format.valueFormat), " %04x");
+            format.mask = 0xffff;
+            format.pI16 = (const int16_t*)buf;
+            break;
+        case 4:
+            strcpy_s(format.allign, sizeof(format.allign), "   ");
+            strcpy_s(format.valueFormat, sizeof(format.valueFormat), " %08x");
+            format.mask = 0xffffffff;
+            format.pI32 = (const int32_t*)buf;
+            break;
+        case 8:
+            strcpy_s(format.allign, sizeof(format.allign), "       ");
+            strcpy_s(format.valueFormat, sizeof(format.valueFormat), " %016x");
+            format.mask = 0xffffffffffffffff;
+            format.pI64 = (const int64_t*)buf;
+            break;
+    }
+
+    out += prefix + String_format2("%s  ", format.countOffset);
+    for (int ii = 0; ii < 16; ++ii)
+    {
+        out += String_format2(" %s%02X%s", format.allign, ii, format.allign);
+    }
+    out += prefix + "\n";
+
+    out += prefix + String_format2("%s +%s\n", format.countOffset, format.outline);
+
+    for (size_t ii = 0; ii < count; ++ii)
     {
         if ((ii & 0x0f) == 0)
         {
-            out += prefix + String_format2("%04x |", ii & 0xfff0);
+            out += prefix + String_format2(format.countFormat, ii & 0xfff0);
         }
 
-        int32_t val32 = buf[ii];
-        val32 &= 0xff;
-        out += prefix + String_format2(" %02x", val32);
+        int64_t val64;
+        switch (size)
+        {
+            case 1: val64 = format.pI8[ii]; break;
+            case 2: val64 = format.pI16[ii]; break;
+            case 4: val64 = format.pI32[ii]; break;
+            case 8: val64 = format.pI64[ii]; break;
+        }
+
+        val64 &= format.mask;
+        out += String_format2(format.valueFormat, val64);
 
         if ((ii & 0x0f) == 0x0f)
         {

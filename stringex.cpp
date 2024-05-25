@@ -319,6 +319,35 @@ std::string String_trim(const std::string& str, const std::string& whitespace)
     return out.size() ? String_rtrim(out, whitespace) : out;
 }
 
+std::string String_printfHexBuffer(const char* buf, size_t size, const std::string& prefix)
+{
+    std::string out = "";
+
+    out += prefix + "       00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n";
+    out += prefix + "     +------------------------------------------------\n";
+
+    size_t count = 0;
+    for (size_t ii = 0; ii < size; ++ii)
+    {
+        if ((ii & 0x0f) == 0)
+        {
+            out += prefix + String_format2("%04x |", ii & 0xfff0);
+        }
+
+        int32_t val32 = buf[ii];
+        val32 &= 0xff;
+        out += prefix + String_format2(" %02x", val32);
+
+        if ((ii & 0x0f) == 0x0f)
+        {
+            out += "\n";
+        }
+    }
+    out += "\n";
+
+    return out;
+}
+
 std::string String_rawFilename(const std::string& filename)
 {
     size_t lastIndex = filename.find_last_of(".");

@@ -24,15 +24,21 @@ void Log::put(Level level, const char* source, uint32_t lineno, const std::strin
 	char datetimeMark[64] = { 0 };
 	std::time_t t = std::time(nullptr);
 	std::tm dt;
-	
+
 	localtime_s(&dt, &t);
-	sprintf_s(postfix, "_%04i.%02i.%02i.log", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday);
+
+	if (m_isTimeStamp)
+	{
+		sprintf_s(postfix, "_%04i.%02i.%02i", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday);
+	}
+
+	std::string filename = m_dir + m_filename + postfix + ".log";
+
 	sprintf_s(datetimeMark, "%02i.%02i.%04i %02i:%02i:%02i [%c",
 		dt.tm_mday, dt.tm_mon + 1, dt.tm_year + 1900,
 		dt.tm_hour, dt.tm_min, dt.tm_sec,
 		mark[static_cast<int>(level)]);
 
-	std::string filename = m_dir + m_filename + postfix;
 	std::string fulltext = datetimeMark;
 
 	if (source)
@@ -144,6 +150,16 @@ bool Log::toFile() const
 void Log::setFile(bool toFile)
 {
 	m_toFile = toFile;
+}
+
+void Log::setTimeStamp(bool val)
+{
+	m_isTimeStamp = val;
+}
+
+bool Log::timeStamp() const
+{
+	return m_isTimeStamp;
 }
 
 std::list<std::string> Log::getNews()

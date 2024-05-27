@@ -59,6 +59,9 @@ public:
     bool toFile() const;
     void setFile(bool toFile);
 
+    void setTimeStamp(bool val);
+    bool timeStamp() const;
+
     std::list<std::string> getNews();
 
 private:
@@ -68,6 +71,7 @@ private:
     Level m_level = Level::Info;
     bool m_toTerminal = true;
     bool m_toFile = true;
+    bool m_isTimeStamp = true;
 
     std::list<std::string> m_list;
 };

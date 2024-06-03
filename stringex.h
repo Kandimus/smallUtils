@@ -41,4 +41,5 @@ extern std::string String_trim(const std::string& str, const std::string& whites
 extern std::string String_printfHexBuffer(const void* buf, size_t count, size_t size, const std::string& prefix);
 
 extern std::string String_rawFilename(const std::string& filename);
+extern std::string String_extensionFilename(const std::string& filename);
 }

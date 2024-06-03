@@ -444,4 +444,10 @@ std::string String_rawFilename(const std::string& filename)
     return lastIndex < filename.size() ? filename.substr(0, lastIndex) : filename;
 }
 
+std::string String_extensionFilename(const std::string& filename)
+{
+    size_t lastIndex = filename.find_last_of(".");
+    return lastIndex < filename.size() ? filename.substr(lastIndex + 1, filename.size()) : "";
+}
+
 }

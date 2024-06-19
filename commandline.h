@@ -141,14 +141,15 @@ public:
         return item ? item->isSet : false;
     }
 
-    inline std::string  getOption(const CommandLineOption& name) const
+    inline const std::string& getOption(const CommandLineOption& name) const
     {
         return getOption(name.first);
     }
-    std::string  getOption(const std::string& name) const
+    const std::string& getOption(const std::string& name) const
     {
+        static std::string emptyString = "";
         auto item = findConstItem(name);
-        return item ? item->value : "";
+        return item ? item->value : emptyString;
     }
 
     std::string  getArgument(unsigned int num) const

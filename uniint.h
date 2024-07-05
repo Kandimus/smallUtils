@@ -10,6 +10,9 @@ union UniInt16
     uint16_t u16;
     uint8_t  u8[2];
     int8_t   i8[2];
+
+    UniInt16() { i16 = 0; }
+    UniInt16(int16_t val) { i16 = val; }
 };
 
 union UniInt32
@@ -20,6 +23,9 @@ union UniInt32
     int16_t  i16[2];
     uint8_t  u8[4];
     int8_t   i8[4];
+
+    UniInt32() { i32 = 0; }
+    UniInt32(int32_t val) { i32 = val; }
 };
 
 union UniInt64

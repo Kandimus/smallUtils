@@ -68,7 +68,7 @@ public:
 
     uint32_t getThreadsCount() const
     {
-        return m_threads.size();
+        return static_cast<uint32_t>(m_threads.size());
     }
 
     template <typename Func, typename ...Args>

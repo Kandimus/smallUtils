@@ -26,11 +26,12 @@ class CommandLine
 private:
     struct Item
     {
-        bool          isSwitch;
-        unsigned int  isSet;
-        std::string   fullname;
-        unsigned char shortname;
-        std::string   value;
+        bool          isSwitch = false;
+        unsigned int  isSet = 0;
+        std::string   fullname = "";
+        unsigned char shortname = (unsigned char)0;
+        std::string   value = "";
+        std::string   description = "";
     };
 
 #ifdef SIMPLEUTILS_COMMANDLINE_AS_SINGLETON
@@ -49,12 +50,12 @@ public:
     virtual ~CommandLine() = default;
 
 public:
-    inline CommandLine& addSwitch(const CommandLineOption& name)
+    inline CommandLine& addSwitch(const CommandLineOption& name, const std::string& description)
     {
-        return addSwitch(name.first, name.second);
+        return addSwitch(name.first, name.second, description);
     }
 
-    CommandLine& addSwitch(const std::string& name, unsigned char shortname)
+    CommandLine& addSwitch(const std::string& name, unsigned char shortname, const std::string& description)
     {
         auto item = findItem(name);
 
@@ -64,21 +65,22 @@ public:
             item = &m_list.back();
         }
 
+        updateMaxLength(name.size());
+
         item->isSwitch  = true;
-        item->isSet     = 0;
         item->fullname  = name;
         item->shortname = shortname;
-        item->value     = "";
+        item->description = description;
 
         return *this;
     }
 
-    inline CommandLine& addOption(const CommandLineOption& name, const std::string& default_value)
+    inline CommandLine& addOption(const CommandLineOption& name, const std::string& default_value, const std::string& description)
     {
-        return addOption(name.first, name.second, default_value);
+        return addOption(name.first, name.second, default_value, description);
     }
 
-    CommandLine& addOption(const std::string& name, const unsigned char shortname, const std::string& default_value)
+    CommandLine& addOption(const std::string& name, const unsigned char shortname, const std::string& default_value, const std::string& description)
     {
         auto item = findItem(name);
 
@@ -88,11 +90,13 @@ public:
             item = &m_list.back();
         }
 
+        updateMaxLength(name.size());
+
         item->isSwitch  = false;
-        item->isSet     = 0;
         item->fullname  = name;
         item->shortname = shortname;
         item->value     = default_value;
+        item->description = description;
 
         return *this;
     }
@@ -160,6 +164,22 @@ public:
     size_t getCountArgument() const
     {
         return m_argument.size();
+    }
+
+    void printArguments() const
+    {
+        printf("arguments:\n");
+
+        for (const auto& item : m_list)
+        {
+            std::string whites;
+            for (size_t ii = item.fullname.size(); ii < m_maxArgLength + 4; ++ii) whites += ' ';
+
+            std::string shortName = item.shortname ? std::string("-") + (char)item.shortname : "  ";
+            printf("    --%s%s%s  %s\n",
+                item.fullname.c_str(), whites.c_str(), shortName.c_str(), item.description.c_str());
+        }
+        printf("\n");
     }
 
     unsigned int parse(unsigned int argc, const char **argv)
@@ -309,9 +329,15 @@ private:
         return nullptr;
     }
 
+    void updateMaxLength(size_t len)
+    {
+        m_maxArgLength = m_maxArgLength > len ? m_maxArgLength : len;
+    }
+
 private:
     std::vector<CommandLine::Item> m_list;
     std::vector<std::string> m_argument;
+    size_t m_maxArgLength = 12;
 };
 
 }

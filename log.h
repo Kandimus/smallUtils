@@ -34,6 +34,8 @@
 #define LOGN(log, format, ...)                    { log.putFormat(su::Log::Level::Notice, __FILENAME__, __LINE__, (format), ##__VA_ARGS__); }
 #define LOGD(log, format, ...)                    { log.putFormat(su::Log::Level::Debug, __FILENAME__, __LINE__, (format), ##__VA_ARGS__); }
 
+#endif
+
 #define LOGP(log, level, format, ...)              { log->putFormat((level), __FILENAME__, __LINE__, (format), ##__VA_ARGS__); }
 #define LOGPE(log, format, ...)                    { log->putFormat(su::Log::Level::Error, __FILENAME__, __LINE__, (format), ##__VA_ARGS__); }
 #define LOGPW(log, format, ...)                    { log->putFormat(su::Log::Level::Warning, __FILENAME__, __LINE__, (format), ##__VA_ARGS__); }
@@ -41,7 +43,6 @@
 #define LOGPN(log, format, ...)                    { log->putFormat(su::Log::Level::Notice, __FILENAME__, __LINE__, (format), ##__VA_ARGS__); }
 #define LOGPD(log, format, ...)                    { log->putFormat(su::Log::Level::Debug, __FILENAME__, __LINE__, (format), ##__VA_ARGS__); }
 
-#endif
 
 namespace su
 {

@@ -319,6 +319,25 @@ std::string String_trim(const std::string& str, const std::string& whitespace)
     return out.size() ? String_rtrim(out, whitespace) : out;
 }
 
+std::string String_replace(const std::string& source, const std::string& oldstr, const std::string& newstr, bool all)
+{
+    std::string out = source;
+    std::string::size_type n = 0;
+
+    while ((n = out.find(oldstr, n)) != std::string::npos)
+    {
+        out.replace(n, oldstr.size(), newstr);
+        n += newstr.size();
+
+        if (!all)
+        {
+            break;
+        }
+    }
+
+    return out;
+}
+
 std::string String_printfHexBuffer(const void* buf, size_t count, size_t size, const std::string& prefix)
 {
     std::string out = "";

@@ -37,6 +37,7 @@ extern std::string String_FromBuffer(const unsigned char *buf, unsigned int bufs
 extern std::string String_ltrim(const std::string& str, const std::string& whitespace);
 extern std::string String_rtrim(const std::string& str, const std::string& whitespace);
 extern std::string String_trim(const std::string& str, const std::string& whitespace);
+extern std::string String_replace(const std::string& source, const std::string& oldstr, const std::string& newstr, bool all);
 
 extern std::string String_printfHexBuffer(const void* buf, size_t count, size_t size, const std::string& prefix);
 

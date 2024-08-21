@@ -43,6 +43,13 @@
 #define LOGPN(log, format, ...)                    { log->putFormat(su::Log::Level::Notice, __FILENAME__, __LINE__, (format), ##__VA_ARGS__); }
 #define LOGPD(log, format, ...)                    { log->putFormat(su::Log::Level::Debug, __FILENAME__, __LINE__, (format), ##__VA_ARGS__); }
 
+#define LOGSP(log, level, format, ...)              { if (log) log->putFormat((level), __FILENAME__, __LINE__, (format), ##__VA_ARGS__); }
+#define LOGSPE(log, format, ...)                    { if (log) log->putFormat(su::Log::Level::Error, __FILENAME__, __LINE__, (format), ##__VA_ARGS__); }
+#define LOGSPW(log, format, ...)                    { if (log) log->putFormat(su::Log::Level::Warning, __FILENAME__, __LINE__, (format), ##__VA_ARGS__); }
+#define LOGSPI(log, format, ...)                    { if (log) log->putFormat(su::Log::Level::Info, __FILENAME__, __LINE__, (format), ##__VA_ARGS__); }
+#define LOGSPN(log, format, ...)                    { if (log) log->putFormat(su::Log::Level::Notice, __FILENAME__, __LINE__, (format), ##__VA_ARGS__); }
+#define LOGSPD(log, format, ...)                    { if (log) log->putFormat(su::Log::Level::Debug, __FILENAME__, __LINE__, (format), ##__VA_ARGS__); }
+
 
 namespace su
 {

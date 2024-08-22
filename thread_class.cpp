@@ -38,10 +38,10 @@ void ThreadClass::close()
     {
         m_command.store(Command::Finish);
         m_thread->join();
-
-        delete m_thread;
-        m_thread = nullptr;
     }
+
+    delete m_thread;
+    m_thread = nullptr;
 
     m_status.store(Status::Closed);
 }

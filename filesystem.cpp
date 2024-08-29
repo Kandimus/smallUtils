@@ -4,7 +4,7 @@
 
 namespace su
 {
-namespace FileSystem
+namespace fs
 {
 
 const std::string DataBuffer::m_marker = "db";
@@ -461,7 +461,6 @@ BaseBuffer* BaseHeader::getBuffer(const std::string& name)
 }
 
 
-} // namespace FileSystem
-
+} // namespace fs
 } // namespace su
 

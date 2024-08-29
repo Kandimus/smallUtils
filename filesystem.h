@@ -19,11 +19,10 @@ using CharArray = std::vector<int8_t>;
 
 namespace su
 {
-namespace FileSystem
+namespace fs
 {
 
 class BaseHeader;
-
 
 class BaseBuffer
 {
@@ -48,8 +47,6 @@ protected:
     std::string m_name = "";
     const BaseHeader* m_parent = nullptr;
 };
-
-// DataBuffer
 
 class DataBuffer : public BaseBuffer
 {
@@ -200,12 +197,8 @@ protected:
     std::vector<BaseBuffer*> m_buffer;
 };
 
-} // namespace FileSystem
-
-} // namespace su
-
 template<class T>
-inline su::FileSystem::DataBuffer& operator << (su::FileSystem::DataBuffer& db, const std::vector<T>& v)
+inline DataBuffer& operator << (DataBuffer& db, const std::vector<T>& v)
 {
     db << v.size();
     for (auto item : v)
@@ -216,7 +209,7 @@ inline su::FileSystem::DataBuffer& operator << (su::FileSystem::DataBuffer& db, 
 }
 
 template<class T>
-inline su::FileSystem::DataBuffer& operator >> (su::FileSystem::DataBuffer& db, std::vector<T>& v)
+inline DataBuffer& operator >> (DataBuffer& db, std::vector<T>& v)
 {
     size_t count;
 
@@ -229,5 +222,9 @@ inline su::FileSystem::DataBuffer& operator >> (su::FileSystem::DataBuffer& db, 
     }
     return db;
 }
+
+} // namespace fs
+} // namespace su
+
 
 #endif

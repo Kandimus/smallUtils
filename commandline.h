@@ -166,6 +166,11 @@ public:
         return m_argument.size();
     }
 
+    const std::string& getApplication() const
+    {
+        return m_application;
+    }
+
     void printArguments() const
     {
         printf("arguments:\n");
@@ -185,6 +190,8 @@ public:
     unsigned int parse(unsigned int argc, const char **argv)
     {
 	    Item* curArg = nullptr;
+
+        m_application = argv[0];
 
 	    for (unsigned int ii = 1; ii < argc; ++ii)
         {
@@ -338,6 +345,7 @@ private:
     std::vector<CommandLine::Item> m_list;
     std::vector<std::string> m_argument;
     size_t m_maxArgLength = 12;
+    std::string m_application = "";
 };
 
 }

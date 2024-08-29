@@ -321,6 +321,11 @@ std::string String_trim(const std::string& str, const std::string& whitespace)
 
 std::string String_replace(const std::string& source, const std::string& oldstr, const std::string& newstr, bool all)
 {
+    if (source.empty() || oldstr.empty())
+    {
+        return source;
+    }
+
     std::string out = source;
     std::string::size_type n = 0;
 
@@ -467,6 +472,20 @@ std::string String_extensionFilename(const std::string& filename)
 {
     size_t lastIndex = filename.find_last_of(".");
     return lastIndex < filename.size() ? filename.substr(lastIndex + 1, filename.size()) : "";
+}
+
+std::string String_filenamePath(const std::string& filename)
+{
+    auto pos1 = static_cast<int64_t>(filename.rfind('/'));
+    auto pos2 = static_cast<int64_t>(filename.rfind('\\'));
+    auto pos = std::max(pos1, pos2);
+
+    if (pos == static_cast<int64_t>(std::string::npos))
+    {
+        return "";
+    }
+
+    return filename.substr(0, pos);
 }
 
 }

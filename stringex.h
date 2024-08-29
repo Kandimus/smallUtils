@@ -43,4 +43,5 @@ extern std::string String_printfHexBuffer(const void* buf, size_t count, size_t 
 
 extern std::string String_rawFilename(const std::string& filename);
 extern std::string String_extensionFilename(const std::string& filename);
+extern std::string String_filenamePath(const std::string& filename);
 }

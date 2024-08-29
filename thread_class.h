@@ -4,6 +4,7 @@
 #include <thread>
 #include <vector>
 #include <atomic>
+#include <mutex>
 
 namespace su
 {
@@ -35,22 +36,26 @@ public:
     std::thread* thread() const { return m_thread; }
     bool isPaused() const { return m_status.load() == Status::Paused; }
     bool isWork() const { auto status = m_status.load(); return status == Status::Running || status == Status::Paused; }
-    void finish() { m_command.store(Command::Finish); }
-    void restore() { m_command.store(Command::Restore); }
-    std::thread* run(size_t delay);
-    void close();
-    void pause();
-    
+
+    virtual void join() const { if (m_thread) m_thread->join(); }
+    virtual void finish();
+    virtual void restore();
+    virtual void close();
+    virtual void pause();
+
+    virtual std::thread* run(size_t delay);
+
     virtual void doWork() = 0;
     virtual void doFinished() = 0;
 
 protected:
+    Command popCommand();
     void proccesing();
 
 private:
     std::thread* m_thread = nullptr;
     std::atomic<size_t> m_delay;
-    std::atomic<Status>  m_status;
+    std::atomic<Status> m_status;
     std::atomic<Command> m_command;
 
     static void ThreadFunc(ThreadClass*);

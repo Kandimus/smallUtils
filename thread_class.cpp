@@ -14,15 +14,14 @@ ThreadClass::~ThreadClass()
     close();
 }
 
-std::thread* ThreadClass::run(size_t delay)
+void ThreadClass::finish()
 {
-    close();
+    m_command.store(Command::Finish);
+}
 
-    m_delay.store(delay);
-
-    m_thread = new std::thread(ThreadClass::ThreadFunc, this); //TODO
-    m_status.store(Status::Running);
-    return m_thread;
+void ThreadClass::restore()
+{
+    m_command.store(Command::Restore);
 }
 
 void ThreadClass::close()
@@ -36,7 +35,7 @@ void ThreadClass::close()
     Status status = m_status.load();
     if (status == Status::Paused || status == Status::Running)
     {
-        m_command.store(Command::Finish);
+        finish();
         m_thread->join();
     }
 
@@ -54,15 +53,24 @@ void ThreadClass::pause()
     }
 }
 
+std::thread* ThreadClass::run(size_t delay)
+{
+    close();
+
+    m_delay.store(delay);
+
+    m_thread = new std::thread(ThreadClass::ThreadFunc, this); //TODO
+    m_status.store(Status::Running);
+    return m_thread;
+}
+
 void ThreadClass::proccesing()
 {
     while (1)
     {
-        Command command = m_command.load();
+        Command command = m_command.exchange(Command::None);
         size_t delay = m_delay.load();
         bool isPaused = false;
-
-        m_command.store(Command::None);
 
         switch (command)
         {

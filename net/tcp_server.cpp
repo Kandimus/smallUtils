@@ -74,22 +74,11 @@ Result TcpServer::start(const std::string& ip, uint16_t port)
     return OK;
 }
 
-void TcpServer::close()
-{
-    if (!isStarted())
-    {
-        return;
-    }
-
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    destroy();
-}
-
 void TcpServer::destroy()
 {
     for (auto item: m_clients)
     {
+        LOGSPI(m_log, "Delete client %s", item->fullId().c_str());
         delete item;
     }
     m_clients.clear();
@@ -102,6 +91,7 @@ void TcpServer::doFinished()
 {
     std::lock_guard<std::mutex> lock(m_mutex);
 
+    LOGSPW(m_log, "TcpServer %s has been finished", m_node.fullId().c_str());
     destroy();
 }
 
@@ -155,8 +145,8 @@ void TcpServer::doWork()
             {
                 LOGSPN(m_log, "Accepting client not present in the `white list`. The %02i.%02i.%02i.%02i client has been disconted",
                        ip[0], ip[1], ip[2], ip[3]);
-                ::shutdown(sockAccept, SD_BOTH);
-                ::closesocket(sockAccept);
+                //shutdown(sockAccept, SD_BOTH);
+                closesocket(sockAccept);
             }
             else
             {
@@ -182,6 +172,11 @@ void TcpServer::doWork()
 
                 if (acceptedClient)
                 {
+                    if (m_immediatelyCloseClients)
+                    {
+                        acceptedClient->configureImmediatelyClose();
+                    }
+
                     m_clients.push_back(acceptedClient);
                     onClientJoin(acceptedClient);
                     LOGSPN(m_log, "The client %s has been accepted", acceptedClient->fullId().c_str());
@@ -218,6 +213,7 @@ void TcpServer::doWork()
             delete client;
             m_clients.erase(m_clients.begin() + ii);
             --ii;
+            continue;
         }
         else if (FD_ISSET(client->socket(), &readfds))
         {
@@ -231,6 +227,7 @@ void TcpServer::doWork()
                 delete client;
                 m_clients.erase(m_clients.begin() + ii);
                 --ii;
+                continue;
             }
             else if (result == Complited && !onRecvFromNode(client))
             {
@@ -240,9 +237,24 @@ void TcpServer::doWork()
                 delete client;
                 m_clients.erase(m_clients.begin() + ii);
                 --ii;
+                continue;
             }
         }
+
+        if (!client->sendToSocket())
+        {
+            onClientDisconnected(client);
+
+            LOGSPN(m_log, "Can not send data to client %s. Disconnect it", client->fullId().c_str());
+            delete client;
+            m_clients.erase(m_clients.begin() + ii);
+            --ii;
+            continue;
+        }
     }
+
+
+    m_clientsCount.store(static_cast<uint32_t>(m_clients.size()));
 }
 
 Node* TcpServer::newClient(SOCKET socket, const sockaddr_in& addr)

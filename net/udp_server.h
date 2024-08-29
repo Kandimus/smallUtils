@@ -21,7 +21,6 @@ public:
 
     Result start(bool isMulticast);
     Result start(const std::string& ip, uint16_t port, bool isMulticast);
-    void close();
 
     Node* getNode() { return &m_node; }
 

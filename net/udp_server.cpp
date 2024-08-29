@@ -60,11 +60,6 @@ Result UdpServer::start(const std::string& ip, uint16_t port, bool isMulticast)
         return result;
     }
 
-    if ((result = m_node.configureReuse()) != OK)
-    {
-        return result;
-    }
-
     if ((result = m_node.openUdpServer(isMulticast)) != OK)
     {
         return result;
@@ -80,18 +75,6 @@ Result UdpServer::start(const std::string& ip, uint16_t port, bool isMulticast)
     return OK;
 }
 
-void UdpServer::close()
-{
-    if (!isStarted())
-    {
-        return;
-    }
-
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    destroy();
-}
-
 void UdpServer::destroy()
 {
     m_node.disconnect();
@@ -102,6 +85,7 @@ void UdpServer::doFinished()
 {
     std::lock_guard<std::mutex> lock(m_mutex);
 
+    LOGSPW(m_log, "UdpServer %s has been finished", m_node.fullId().c_str());
     destroy();
 }
 
@@ -116,6 +100,7 @@ void UdpServer::doWork()
 
     if (m_node.socket() == SOCKET_ERROR)
     {
+        LOGSPE(m_log, "Socket error.");
         destroy();
         finish();
         return;
@@ -143,7 +128,7 @@ void UdpServer::doWork()
 
     if (FD_ISSET(m_node.socket(), &exfds))
     {
-        LOGSPW(m_log, "Disconecting from multicast.");
+        LOGSPW(m_log, "Disconecting from port.");
         destroy();
         return;
     }

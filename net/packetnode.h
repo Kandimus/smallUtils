@@ -29,23 +29,28 @@ public:
     PacketNode(uint32_t magic, SOCKET socket, const sockaddr_in& addr, int32_t id, Log* plog);
     virtual ~PacketNode() = default;
 
-    size_t countOfPackets() const { return m_packets.size(); }
-    std::vector<uint8_t> extractPacket();
-    void clearPackets() { m_packets.clear(); }
+    size_t countRecvPackets() const { return m_recvPackets.size(); }
+    RawData extractRecvPacket();
+    void clearRecvPackets() { m_recvPackets.clear(); }
+
+    size_t countSendPackets() const { return m_sendPackets.size(); }
+    void clearSendPackets() { m_sendPackets.clear(); }
 
     // su::Net::Node
-    virtual RecvStatus recv(uint8_t* data, size_t size) override;
+    virtual RecvStatus recv(uint8_t* data, size_t size, const sockaddr_in& addr) override;
     virtual size_t send(const void* data, size_t size) override;
+    virtual bool sendToSocket() override;
 
 protected:
-    RecvStatus checkData();
+    RecvStatus checkData(const sockaddr_in& addr);
     void clear();
 
 protected:
     uint32_t m_magic;
     const uint16_t m_version = 0x0100;
     std::vector<uint8_t> m_data;
-    std::vector<std::vector<uint8_t>> m_packets;
+    std::vector<RawData> m_recvPackets;
+    std::vector<std::vector<uint8_t>> m_sendPackets;
     PacketHeader m_header;
     Crc32 m_crc;
 };

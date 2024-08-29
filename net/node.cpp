@@ -1,7 +1,10 @@
 
+#include <thread>
+
 #include "net/node.h"
 #include <vector>
 #include <ws2tcpip.h>
+#include <ws2def.h>
 
 namespace su
 {
@@ -15,10 +18,7 @@ Node::Node(SOCKET socket, const sockaddr_in& addr, int32_t id, Log* plog)
     m_log = plog;
     m_id = id;
 
-    m_ip = std::to_string(m_addr.sin_addr.S_un.S_un_b.s_b1) + "." +
-           std::to_string(m_addr.sin_addr.S_un.S_un_b.s_b2) + "." +
-           std::to_string(m_addr.sin_addr.S_un.S_un_b.s_b3) + "." +
-           std::to_string(m_addr.sin_addr.S_un.S_un_b.s_b4);
+    m_ip = addrToString(m_addr);
     m_fullId = (m_id >= 0) ? std::to_string(m_id) + "/" + m_ip : m_ip;
 }
 
@@ -109,31 +109,57 @@ Result Node::configureKeepAlive()
         return CantSetKeepAlive;
     }
 
-    // The interval between the last data packet sent (simple ACKs are not considered data) and the first
-    // keepalive probe; after the connection is marked to need keepalive, this counter is not used any further
-    int keepIdle = 2;
+    // The interval (seconds) between the last data packet sent (simple ACKs are not considered data) and
+    // the first keepalive probe; after the connection is marked to need keepalive, this counter is not
+    // used any further
+    int keepIdle = 1;
     if (setsockopt(m_socket, IPPROTO_TCP, TCP_KEEPIDLE, (char*)&keepIdle, sizeof(keepIdle)) != 0)
     {
         disconnect();
         return CantSetKeepAlive; // Can't set socket keepidle
     }
 
-    // The number of unacknowledged probes to send before considering the connection dead and notifying the application layer
-    int count = 3;//10;
-    if (setsockopt(m_socket, IPPROTO_TCP, TCP_KEEPCNT, (const char*)&count, sizeof(count)) != 0)
-    {
-        disconnect();
-        return Result::CantSetKeepAlive; // Can't set socket keepcnt
-    }
-
-    // The interval between subsequential keepalive probes, regardless of what the connection has exchanged in the meantime
-    int interval = 1;//12;
+    // The interval (seconds) between subsequential keepalive probes, regardless of what the connection has exchanged
+    // in the meantime
+    int interval = 1;
     if (setsockopt(m_socket, IPPROTO_TCP, TCP_KEEPINTVL, (const char*)&interval, sizeof(interval)) != 0)
     {
         disconnect();
         return Result::CantSetKeepAlive; // Can't set socket keepintvl
     }
 
+    // The number of unacknowledged probes to send before considering the connection dead and notifying
+    // the application layer
+    int count = 3;
+    if (setsockopt(m_socket, IPPROTO_TCP, TCP_KEEPCNT, (const char*)&count, sizeof(count)) != 0)
+    {
+        disconnect();
+        return Result::CantSetKeepAlive; // Can't set socket keepcnt
+    }
+
+#ifdef WIN32
+    struct timeval timeout;
+    timeout.tv_sec = 2;
+    timeout.tv_usec = 0;
+
+    if (::setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) < 0)
+    {
+        disconnect();
+        return Result::CantSetTimeout;
+    }
+
+    if (::setsockopt(m_socket, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(timeout)) < 0)
+    {
+        disconnect();
+        return Result::CantSetTimeout;
+    }
+#else
+    if (setsockopt(m_socket, IPPROTO_TCP, TCP_USER_TIMEOUT, (const char*)&count, sizeof(count)) != 0)
+    {
+        disconnect();
+        return Result::CantSetTimeout; // Can't set socket keepcnt
+    }
+#endif
     return OK;
 }
 
@@ -148,6 +174,23 @@ Result Node::configureReuse()
 
     return OK;
 }
+
+Result Node::configureImmediatelyClose()
+{
+    linger l;
+    l.l_onoff = 1;
+    l.l_linger = 0;
+
+    if (setsockopt(m_socket, SOL_SOCKET, SO_LINGER, (const char*)&l, sizeof(l)) == SOCKET_ERROR)
+    {
+        disconnect();
+        return CantSetLinger;
+    }
+
+    m_immediatelyClose = true;
+    return OK;
+}
+
 
 Result Node::openTcpServer()
 {
@@ -198,33 +241,25 @@ Result Node::connectToTcpServer()
         return CantConnect;
     }
 
+    m_countOfRecvErrrors = 0;
+    m_countOfSendErrrors = 0;
     return OK;
 }
 
-RecvStatus Node::recv(uint8_t* read_buff, size_t read_size)
+RecvStatus Node::recv(uint8_t*, size_t, const sockaddr_in&)
 {
     return Complited;
 }
 
 size_t Node::send(const void *packet, size_t size)
 {
-    size_t sendbytes = 0;
-    size_t result = 0;
-    uint8_t* buff = (uint8_t*)packet;
+    std::lock_guard<std::mutex> guard(m_mutex);
+    size_t pos = m_sendBuffer.size();
+    m_sendBuffer.resize(m_sendBuffer.size() + size);
 
-    while (sendbytes < size)
-    {
-        result = ::send(m_socket, (const char*)(buff + sendbytes), int(size - sendbytes), 0);
+    memcpy(m_sendBuffer.data() + pos, packet, size);
 
-        if (result <= 0)
-        {
-            return result;
-        }
-        
-        sendbytes += result;
-    }
-
-    return sendbytes;
+    return m_sendBuffer.size();
 }
 
 bool Node::disconnect()
@@ -234,8 +269,12 @@ bool Node::disconnect()
         return false;
     }
 
-    ::shutdown(m_socket, SD_BOTH);
-    ::closesocket(m_socket); // Posix "close"
+    if (!m_immediatelyClose)
+    {
+        shutdown(m_socket, SD_SEND);
+    }
+
+    closesocket(m_socket);
     m_socket = SOCKET_ERROR;
 
     return true;
@@ -251,35 +290,90 @@ int Node::getLastError() const
     return ::WSAGetLastError();
 }
 
+bool Node::tooManySendErrors() const
+{
+    return m_maxOfSendErrrors ? m_countOfSendErrrors >= m_maxOfSendErrrors : false;
+}
+
+bool Node::tooManyRecvErrors() const
+{
+    return m_maxOfRecvErrrors ? m_countOfRecvErrrors >= m_maxOfRecvErrrors : false;
+}
+
+int32_t Node::lastRecvBytes() const
+{
+    return m_recvBytes;
+}
+
+int32_t Node::lastSendBytes() const
+{
+    return m_sendBytes;
+}
+
 RecvStatus Node::readFromSocket()
 {
     std::vector<uint8_t> buff(m_maxRecvBuff * 2);
     RecvStatus result = RecvStatus::Fault;
-    auto readbytes = ::recv(m_socket, (char*)buff.data(), (int)buff.size(), 0);
+    sockaddr_in addr;
+    int addrSize = sizeof(addr);
+
+    m_recvBytes = ::recvfrom(m_socket, (char*)buff.data(), (int)buff.size(), 0, (sockaddr*)&addr, &addrSize);
 
     if (::WSAGetLastError())
     {
-        disconnect();
         return Fault;
     }
 
-    if (readbytes > 0)
+    if (m_recvBytes > 0)
     {
-        result = recv(buff.data(), readbytes);
+        result = recv(buff.data(), m_recvBytes, addr);
     }
 
-    if (readbytes == -1 && (errno != EAGAIN || errno != EWOULDBLOCK))
+    if (m_recvBytes <= 0 && errno == ETIMEDOUT)
     {
-        return NoComplited; // Все хорошо, даже если мы ничего не считали, то сокет висит на приеме данных
+        LOGSPD(m_log, "Socket %s, result %i, errno %i (ETIMEDOUT)", m_fullId.c_str(), m_recvBytes, errno);
     }
 
-    if (readbytes < 0 || result == Fault)
+    if (m_recvBytes < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
     {
-        disconnect();
-        return Fault;
+        LOGSPD(m_log, "Socket %s, result %i, errno %i", m_fullId.c_str(), m_recvBytes, errno);
+        return NoComplited;
     }
 
+    // -1 - error
+    // 0 - may be it is keep-alive and remote socket was close
+    if (m_recvBytes <= 0 || result == Fault)
+    {
+        ++m_countOfRecvErrrors;
+        return NoComplited;
+        //return Fault;
+    }
+
+    m_countOfRecvErrrors = 0;
     return result;
+}
+
+bool Node::sendToSocket()
+{
+    std::lock_guard<std::mutex> guard(m_mutex);
+
+    m_sendBytes = 0;
+
+    if (m_sendBuffer.empty())
+    {
+        return true;
+    }
+
+    m_sendBytes = ::send(m_socket, (char*)m_sendBuffer.data(), (int)m_sendBuffer.size(), 0);
+    if (m_sendBytes < 0)
+    {
+        ++m_countOfSendErrrors;
+        return true;
+    }
+
+    m_countOfSendErrrors = 0;
+    m_sendBuffer.erase(m_sendBuffer.begin(), m_sendBuffer.begin() + m_sendBytes);
+    return true;
 }
 
 } // namespace Net

@@ -18,14 +18,16 @@ bool initWinSock2()
     return WSAStartup(MAKEWORD(2, 2), &wsaData) == NO_ERROR;
 }
 
+std::string addrToString(const sockaddr_in& addr)
+{
+    return ipToString(addr.sin_addr.S_un.S_addr);
+}
+
 std::string ipToString(uint32_t ip)
 {
     unsigned char* octet = (unsigned char*)&ip;
-    char str[32];
-
-    sprintf(str, "%i.%i.%i.%i", octet[0], octet[1], octet[2], octet[3]);
-
-    return std::string(str);
+    return std::to_string(octet[0]) + "." + std::to_string(octet[1]) + "." +
+           std::to_string(octet[2]) + "." + std::to_string(octet[3]);
 }
 
 std::vector<uint32_t> getLocalIps()

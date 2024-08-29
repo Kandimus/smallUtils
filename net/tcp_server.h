@@ -20,7 +20,6 @@ public:
 
     Result start();
     Result start(const std::string& ip, uint16_t port);
-    void close();
 
     const Node* node() const { return &m_node; }
 
@@ -31,6 +30,7 @@ public:
     bool addWhiteIp(const std::string& ip);
 
     bool isStarted() const { return m_isStarted.load(); }
+    uint32_t clientsCount() const { return m_clientsCount.load(); }
 
     bool send(Node* target, const void* packet, size_t size);
 
@@ -46,6 +46,7 @@ protected:
     virtual bool onRecvFromNode(Node* node) { return true; }
     virtual Node* newClient(SOCKET socket, const sockaddr_in& addr);
 
+    std::mutex& getMutex() { return m_mutex; }
     Log* getLog() { return m_log; }
     int32_t getNextClientId();
 
@@ -61,6 +62,7 @@ protected:
     uint32_t m_selectSec = 0;
     uint32_t m_selectUSec = 100;
     uint32_t m_maxClients = 0xffffffff;
+    bool m_immediatelyCloseClients = false;
 
 private:
     Log* m_log = nullptr;
@@ -68,6 +70,7 @@ private:
     std::mutex m_mutex;
     std::atomic<bool> m_isStarted = false;
     int32_t m_clientNum = 0;
+    std::atomic<uint32_t> m_clientsCount = 0;
 };
 
 } // namespace Net

@@ -19,21 +19,22 @@ UdpNode::UdpNode(SOCKET socket, const sockaddr_in& addr, int32_t id, Log* plog) 
     su::Net::Node(socket, addr, id, plog)
 {}
 
-RecvStatus UdpNode::recv(uint8_t* data, size_t size)
+RecvStatus UdpNode::recv(uint8_t* data, size_t size, const sockaddr_in& addr)
 {
-    std::vector<uint8_t> packet(size);
+    RawData packet(addr, size);
 
-    memcpy(packet.data(), data, size);
+    memcpy(packet.raw.data(), data, size);
+
     m_packets.push_back(std::move(packet));
 
     return su::Net::RecvStatus::Complited;
 }
 
-std::vector<uint8_t> UdpNode::extractPacket()
+RawData UdpNode::extractPacket()
 {
     if (m_packets.empty())
     {
-        return {};
+        return RawData();
     }
 
     auto out = std::move(m_packets.back());

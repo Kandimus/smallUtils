@@ -18,50 +18,67 @@ void TcpClient::disconnect()
     return destroy();
 }
 
-Result TcpClient::connect(const std::string& ip, uint16_t port)
+void TcpClient::connect(const std::string& ip, uint16_t port)
 {
-    Result result = OK;
-
     std::lock_guard<std::mutex> guard(m_mutex);
 
     destroy();
 
     m_ip = ip;
     m_port = port;
+    m_doConnect = true;
+}
+
+bool TcpClient::doConnect()
+{
+    if (!m_doConnect)
+    {
+        return true;
+    }
+
+    m_lastError.store(OK);
+
+    destroy();
 
     m_node.configureAddress(m_ip, m_port);
 
-    if ((result = m_node.createTcpClient()) != OK)
+    if ((m_lastError = m_node.createTcpClient()) != OK)
     {
-        return result;
+        return false;
     }
 
-    if ((result = m_node.connectToTcpServer()) != OK)
+    if ((m_lastError = m_node.connectToTcpServer()) != OK)
     {
-        return result;
+        return false;
     }
 
-    if ((result = m_node.configureParameters()) != OK)
+    if ((m_lastError = m_node.configureParameters()) != OK)
     {
-        return result;
+        return false;
     }
 
-    if ((result = m_node.configureKeepAlive()) != OK)
+    if ((m_lastError = m_node.configureKeepAlive()) != OK)
     {
-        return result;
+        return false;
     }
 
-    m_timerKeepAlive.start(1000);
+    if (m_settingKeepAlive)
+    {
+        m_timerKeepAlive.start(m_settingKeepAlive);
+    }
+
     m_isConnected.store(true);
+    m_doConnect.store(false);
 
     if (!onConnect())
     {
         destroy();
         m_isConnected.store(false);
-        return Breaking;
+        m_lastError.store(Breaking);
+        return false;
     }
 
-    return OK;
+    return true;
 }
 
 size_t TcpClient::send(void* packet, size_t size)
@@ -69,14 +86,24 @@ size_t TcpClient::send(void* packet, size_t size)
     return m_node.send(packet, size);
 }
 
+void TcpClient::restartKeepAliveTimer()
+{
+    if (m_timerKeepAlive.isStarted())
+    {
+        m_timerKeepAlive.restart();
+    }
+}
+
 void TcpClient::doWork()
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    doConnect();
+
     if (!isConnected())
     {
         return;
     }
-
-    std::lock_guard<std::mutex> lock(m_mutex);
 
     if (!m_node.isConnected())
     {
@@ -86,18 +113,22 @@ void TcpClient::doWork()
 
     int     maxFd;
     fd_set  readfds;
+//    fd_set  writefds;
     fd_set  exfds;
     timeval tv;
 
     FD_ZERO(&readfds);
+//    FD_ZERO(&writefds);
     FD_ZERO(&exfds);
     FD_SET(m_node.socket(), &readfds);
+//    FD_SET(m_node.socket(), &writefds);
     FD_SET(m_node.socket(), &exfds);
     tv.tv_sec = m_selectSec;
     tv.tv_usec = m_selectUSec;
     maxFd = (int)m_node.socket();
 
-    if (select(maxFd + 1, &readfds, NULL, &exfds, &tv) == -1)
+    auto result = select(maxFd + 1, &readfds, /*&writefds*/nullptr, &exfds, &tv);
+    if (result == -1)
     {
         LOGSPE(m_log, "The select function fault. Error: %i", m_node.getLastError());
         destroy();
@@ -110,6 +141,13 @@ void TcpClient::doWork()
         destroy();
         return;
     }
+
+//    if (!FD_ISSET(m_node.socket(), &writefds))
+//    {
+//        LOGSPW(m_log, "Send data error. Disconnecting");
+//        destroy();
+//        return;
+//    }
     
     if (FD_ISSET(m_node.socket(), &readfds))
     {
@@ -129,24 +167,46 @@ void TcpClient::doWork()
         }
     }
 
-    if (m_timerKeepAlive.isFinished())
+    if (!m_node.sendToSocket())
+    {
+        LOGSPW(m_log, "Can not send data to server. Disconnecting");
+        destroy();
+        return;
+    }
+
+    // Timeout
+    if ((m_node.lastRecvBytes() > 0 || m_node.lastSendBytes() > 0) && m_timerKeepAlive.isStarted())
     {
         m_timerKeepAlive.restart();
+    }
+    if (m_timerKeepAlive.isFinished())
+    {
+        LOGSPW(m_log, "Timeout of recv/send function. Disconnecting");
+        destroy();
+        return;
+    }
 
-        int result = ::send(m_node.socket(), nullptr, 0, 0);
+    // Errors
+    if (m_node.tooManySendErrors())
+    {
+        LOGSPW(m_log, "Too many sending errors. Disconnecting");
+        destroy();
+        return;
+    }
 
-        if (result == -1)
-        {
-            LOGSPW(m_log, "Server is shutdown...");
-            destroy();
-            return;
-        }
+    if (m_node.tooManyRecvErrors())
+    {
+        LOGSPW(m_log, "Too many receiving errors. Disconnecting");
+        destroy();
+        return;
     }
 }
 
 void TcpClient::doFinished()
 {
     std::lock_guard<std::mutex> lock(m_mutex);
+
+    LOGSPW(m_log, "TcpClient %s has been finished", m_node.fullId().c_str());
     destroy();
 }
 

@@ -1,9 +1,12 @@
 
 #pragma once
 
+#define WIN32_LEAN_AND_MEAN
+
 #include <stdint.h>
 #include <vector>
 #include <string>
+#include <winsock2.h>
 
 namespace su
 {
@@ -34,6 +37,8 @@ enum Result
     CantEnableMulticast,
     CantSetNoBlock,
     CantSetReuse,
+    CantSetTimeout,
+    CantSetLinger,
 };
 
 enum RecvStatus
@@ -43,9 +48,20 @@ enum RecvStatus
     Complited = 1,
 };
 
+struct RawData
+{
+    RawData() = default;
+    RawData(size_t size) : raw(size) {}
+    RawData(const sockaddr_in& a, size_t size) : raw(size) { addr = a; }
+
+    sockaddr_in addr;
+    std::vector<uint8_t> raw;
+};
+
 
 extern bool initWinSock2();
 
+extern std::string addrToString(const sockaddr_in& addr);
 extern std::string ipToString(uint32_t ip);
 extern std::vector<uint32_t> getLocalIps();
 

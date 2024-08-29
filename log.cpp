@@ -1,15 +1,18 @@
+
+#include "Log.h"
+
 #include <ctime>
 #include <fstream>
 #include <iostream>
 #include <stdarg.h>
 #include <unordered_map>
 #include <vector>
+#include <filesystem>
 
-#include "Log.h"
+#include "fileex.h"
 
 namespace su
 {
-
 
 class LogFileInfo
 {
@@ -28,7 +31,7 @@ namespace
 
 std::mutex mutexFileList;
 std::unordered_map<size_t, LogFileInfo*> fileList;
-const uint32_t MAX_TEXT_BUFF = 2048;
+const uint32_t MAX_TEXT_BUFF = 4096;
 
 };
 
@@ -107,6 +110,7 @@ void Log::put(Level level, const char* source, uint32_t lineno, const std::strin
         if (file.is_open())
         {
             file << fulltext;
+            file.flush();
             file.close();
         }
     }
@@ -140,25 +144,30 @@ void Log::putFormat(Level level, const char* source, uint32_t lineno, const char
 
 void Log::setUnsafeDir(const std::string& dir)
 {
-#ifdef _WIN32
-    char sep = '\\';
-#else
-    char sep = '/'
-#endif
-
     m_dir = dir;
+    fs::addSeparator(m_dir);
+}
 
-    if (m_dir.back() != sep)
-    {
-        m_dir += sep;
-    }
+void Log::setPath(const std::string& dir)
+{
+    std::lock_guard<std::mutex> guard(m_mutex);
 
+    setUnsafeDir(dir);
+    std::filesystem::create_directories(dir);
+
+    setUnsafeFilename(m_filename);
 }
 
 void Log::setDir(const std::string& dir)
 {
+    std::string curPath = std::filesystem::current_path().string();
+    fs::addSeparator(curPath);
+
     std::lock_guard<std::mutex> guard(m_mutex);
-    setUnsafeDir(dir);
+
+    setUnsafeDir(curPath + dir);
+    std::filesystem::create_directories(m_dir);
+
     setUnsafeFilename(m_filename);
 }
 

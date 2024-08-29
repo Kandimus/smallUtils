@@ -50,7 +50,6 @@
 #define LOGSPN(log, format, ...)                    { if (log) log->putFormat(su::Log::Level::Notice, __FILENAME__, __LINE__, (format), ##__VA_ARGS__); }
 #define LOGSPD(log, format, ...)                    { if (log) log->putFormat(su::Log::Level::Debug, __FILENAME__, __LINE__, (format), ##__VA_ARGS__); }
 
-
 namespace su
 {
 
@@ -92,6 +91,7 @@ public:
     void put(Level level, const char* source, uint32_t lineno, const std::string& text);
     void putFormat(Level level, const char* source, uint32_t lineno, const char* format, ...);
     
+    void setPath(const std::string& dir);
     void setDir(const std::string& dir);
     const std::string& getDir() const;
     

@@ -7,7 +7,7 @@
 
 namespace su
 {
-namespace FileSystem
+namespace fs
 {
 
 class StdStreamIn : public IStreamIn
@@ -44,6 +44,6 @@ protected:
     std::ofstream& m_ofs;
 };
 
-} // namespace FileSystem
+} // namespace fs
 } // namespace su
 #endif

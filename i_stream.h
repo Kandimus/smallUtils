@@ -2,9 +2,11 @@
 #define _SMALLUTILL_FILESYSTEM_I_STREAM_H_
 #pragma once
 
+#include <stdint.h>
+
 namespace su
 {
-namespace FileSystem
+namespace fs
 {
 
 enum class Seek
@@ -36,6 +38,6 @@ public:
     virtual void seek(int64_t pos, Seek way) = 0;
 };
 
-} // namespace FileSystem
+} // namespace fs
 } // namespace su
 #endif

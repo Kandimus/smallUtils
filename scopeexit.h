@@ -2,15 +2,14 @@
 
 #pragma once
 
+#include <utility>
+
 namespace su
 {
-
-/*
-    The purpose of this thing is to ensure code execution on scope exit
-    The preferred usage is with macro below (less code needed):
-
-    SU_ON_SCOPE_EXIT( do_Some_Stuff )
-*/
+// The purpose of this thing is to ensure code execution on scope exit
+// The preferred usage is with macro below (less code needed):
+//
+// SU_ON_SCOPE_EXIT( do_Some_Stuff )
 
 template <typename F>
 class ScopeExit

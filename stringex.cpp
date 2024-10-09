@@ -52,28 +52,35 @@ std::vector<std::string> String_slit(const std::string& text, char separator)
     return output;
 }
 
-int String_isValidHex(const char *str, unsigned int &val)
+bool String_IsValidHex(const char *str, size_t &val)
 {
-    unsigned int ii = 0;
+    unsigned int len = 0;
     unsigned int xx = 0;
 
-    if(nullptr == str) return false;
+    val = 0;
+    if (!str) return false;
 
-    for(val = 0; *str; ++str, ++ii)
+    for(val = 0; *str; ++str, ++len)
     {
-        if(ii >= 8) return val = 0;
+        if (len >= 16)
+        {
+            val = 0;
+            return false;
+        }
 
-              if(*str >= '0' && *str <= '9') xx = *str - 0x30;
-        else if(*str >= 'a' && *str <= 'f') xx = *str - 0x57;
-        else if(*str >= 'A' && *str <= 'F') xx = *str - 0x37;
-        else return val = 0;
+        if(*str >= '0' && *str <= '9') xx = *str - 0x30; else
+        if(*str >= 'a' && *str <= 'f') xx = *str - 0x57; else
+        if(*str >= 'A' && *str <= 'F') xx = *str - 0x37; else
+        {
+            val = 0;
+            return false;
+        }
 
         val  = (val << 4) + xx;
     }
 
     return true;
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //

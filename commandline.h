@@ -2,15 +2,20 @@
 //===
 //=== commandline.h
 //===
-//=== Copyright (c) 2020-2023 by RangeSoft.
+//=== Copyright (c) 2020-2024 by RangeSoft.
 //=== All rights reserved.
 //===
 //=== Litvinov "VeduN" Vitaly
 //===
 //=================================================================================================
-#ifndef _SIMPLEUTILS_COMMANDLINE_H_
-#define _SIMPLEUTILS_COMMANDLINE_H_
+#ifndef _SMALLUTILS_COMMANDLINE_H_
+#define _SMALLUTILS_COMMANDLINE_H_
 #pragma once
+
+/*
+ * Define SMALLUTILS_COMMANDLINE_AS_SINGLETON for using CommandLine class as singleton
+ *
+ */
 
 #include <vector>
 #include <string>
@@ -34,7 +39,7 @@ private:
         std::string   description = "";
     };
 
-#ifdef SIMPLEUTILS_COMMANDLINE_AS_SINGLETON
+#ifdef SMALLUTILS_COMMANDLINE_AS_SINGLETON
 public:
     static CommandLine& instance() { static CommandLine Singleton; return Singleton; }
 private:
@@ -181,8 +186,28 @@ public:
             for (size_t ii = item.fullname.size(); ii < m_maxArgLength + 4; ++ii) whites += ' ';
 
             std::string shortName = item.shortname ? std::string("-") + (char)item.shortname : "  ";
-            printf("    --%s%s%s  %s\n",
-                item.fullname.c_str(), whites.c_str(), shortName.c_str(), item.description.c_str());
+            std::string text = "    --" + item.fullname + whites + shortName + "  ";
+
+            // split desriptions
+            std::vector<std::string> descriptions;
+            std::string::size_type prev_pos = 0, pos = 0;
+            while((pos = item.description.find("\n", pos)) != std::string::npos)
+            {
+                std::string substring(item.description.substr(prev_pos, pos - prev_pos));
+                descriptions.push_back(substring);
+                prev_pos = ++pos;
+            }
+            descriptions.push_back(item.description.substr(prev_pos, pos - prev_pos));
+
+            for (size_t ii = 0; ii < descriptions.size(); ++ii)
+            {
+                if (ii == 1)
+                {
+                    text = std::string(text.size(), ' ');
+                }
+
+                printf("%s%s\n", text.c_str(), descriptions[ii].c_str());
+            }
         }
         printf("\n");
     }

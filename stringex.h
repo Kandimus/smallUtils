@@ -21,7 +21,7 @@
 namespace su
 {
 
-extern std::vector<std::string> String_slit(const std::string& text, char separator);
+extern std::vector<std::string> String_split(const std::string& text, char separator);
 extern bool        String_IsValidHex(const char *str, size_t &val);
 extern int         String_BufferSize(const char *format, va_list arg_ptr);
 extern std::string String_format(const char *format, ...);

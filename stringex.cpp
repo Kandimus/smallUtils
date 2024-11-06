@@ -34,7 +34,7 @@
 namespace su
 {
 
-std::vector<std::string> String_slit(const std::string& text, char separator)
+std::vector<std::string> String_split(const std::string& text, char separator)
 {
     std::vector<std::string> output;
 
